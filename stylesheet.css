@@ -1,0 +1,26 @@
+*{
+    margin:0;
+    padding:0;
+}
+
+h1 {
+    margin: 0.5rem 0rem 0rem 0.5rem;
+}
+
+table {
+    margin: 5rem;
+}
+
+table td {
+    border: 0.1rem black solid;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 0.5rem;
+}
+
+input {
+    margin: 0.2rem;
+    max-width: 5rem;
+}
