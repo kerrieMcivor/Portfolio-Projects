@@ -1,0 +1,97 @@
+<!doctype html>
+
+<html lang="en">
+
+	<head>
+
+		<meta charset="utf-8">
+
+		<title>Kerrie Mcivor AJAX/PHP/CURL/JSON task</title>
+		<meta name="description" content="AJAX/PHP/CURL/JSON example">
+		<meta name="author" content="Kerrie Mcivor">
+
+	</head>
+
+	<body>
+
+		<label>Select Latitude</label><select id="selectLatitude">
+			<option value="1">50.01</option>
+			<option value="2">51.01</option>
+			<option value="3">52.01</option>
+		</select>
+
+		<label>Select Longitude</label><select id="selectLongitude">
+			<option value="a">10.2</option>
+			<option value="b">11.2</option>
+			<option value="c">12.2</option>
+		</select>
+
+		<button id="srtm1BtnRun">Get SRTM1</button>
+		<button id="srtm3BtnRun">Get SRTM3</button>
+		<button id="GTOPO3OBtnRun">Get GTOPO3O</button>
+
+		<br><br>
+
+		<div id="srtm1Results">
+			
+			<table>
+
+				<tr>
+					<td align="right">
+						srtm1: 
+					</td>
+					<td id="srtm1">
+						
+					</td>
+
+				</tr>
+
+
+			</table>
+
+		</div>
+
+		<div id="srtm3Results">
+			
+			<table>
+
+				<tr>
+					<td align="right">
+						srtm3: 
+					</td>
+					<td id="srtm3">
+						
+					</td>
+
+				</tr>
+
+
+			</table>
+
+		</div>
+
+		<div id="GTOPO30Results">
+			
+			<table>
+
+				<tr>
+					<td align="right">
+						GTOPO30: 
+					</td>
+					<td id="GTOPO30">
+						
+					</td>
+
+				</tr>
+
+
+			</table>
+
+		</div>
+
+		<script type="application/javascript" src="libs/js/jquery-2.2.3.min.js"></script>
+		<script type="application/javascript" src="libs/js/script.js"></script>
+
+	</body>
+
+</html>
