@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <!--Meta data-->
+	<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Gazetteer</title>
+	<meta name="description" content="Gazetteer API">
+	<meta name="author" content="Kerrie Mcivor">
+  <!--Stylesheets-->
+  <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <!--Leaflet styling & script-->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css"
+  integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI="
+  crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" 
+  integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM="
+  crossorigin=""></script>
+
+</head>
+
+<body>
+  <!--Navbar-->
+  <nav class="navbar navbar-default">
+    <div class="container-fluid justify-content-center">
+      <div class="navbar-header">
+        <a class="navbar-brand">Gazetteer</a>
+      </div>
+      <!--Dropdown list-->
+      <div class="dropdown py-4">
+        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" id="dropdown">Country
+        <span class="caret"></span></button>
+        <ul class="dropdown-menu">
+          <li>Example</li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div id="map" class="w-100 h-100"></div>
+
+  <!--Scripts-->
+	<script src='assets/js/bootstrap.min.js'></script>
+  <script src='assets/js/jquery-2.2.3.min.js'></script>
+  <script src='assets/js/script.js'></script> 
+
+</body>
+</html>
