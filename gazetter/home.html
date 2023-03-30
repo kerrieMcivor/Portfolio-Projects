@@ -24,15 +24,14 @@
 
 <body>
   <!-- Navbar -->
-  <nav class="navbar navbar-default">
-    <div class="container-fluid justify-content-center">
-      <div class="navbar-header">
-        <a class="navbar-brand" href="#">Gazetteer</a>
-      </div>
-
+  <div class="container-fluid bg-light">
+    <nav class="navbar justify-content-center">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="#">Gazetteer</a>
+    </div>
       <!-- Dropdown list -->
-      <div class="dropdown py-4">
-        <button class="btn btn-primary dropdown-toggle" type="button" data-toggle="dropdown" id="dropdown">Country
+      <div class="dropdown">
+        <button class="btn btn-primary dropdown-toggle pl-1" type="button" data-toggle="dropdown" id="dropdown">Country
         <span class="caret"></span></button>
         <select class="dropdown-menu">
           <option>Country 1</option>
@@ -41,9 +40,22 @@
           <!-- Add more options here -->
         </select>
       </div>
-    </div>
   </nav>
+  </div>
 
+  <!-- country map from leaflet -->
+ 
+  <div class ="row" id="map">
+      <script>const map = L.map('map').fitWorld();
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);</script>
+  </div>
+    <!-- preloader div -->
+    <div class="d-flex justify-content-center text-primary" id="loader">
+      <div class="spinner-border" role="status"></div>
+    </div>
   <!-- Javascript scripts -->
 	<script src="assets/js/bootstrap.min.js" type="text/javascript"></script>
   <script src="assets/js/script.js" type="text/javascript"></script> 

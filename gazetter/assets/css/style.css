@@ -6,14 +6,6 @@
     font-size: 3rem;
 }
 
-.dropdown {
-    margin-left: 2rem;
-}
-
 #map{
-    position: absolute;
-    top: 1;
-    bottom: 0;
-    width: 100%;
-    z-index: -1;
+  height: 700px;
   }
