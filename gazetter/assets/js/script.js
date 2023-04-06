@@ -1,3 +1,9 @@
+//global variables
+let userLocation;
+let map;
+let polygon = null;
+console.log(polygon)
+
 //map loaded, no loader
 /*document.getElementById('map').onload = function () {
     document.getElementById('map').style.display = "block";
@@ -9,12 +15,19 @@ document.getElementById('map').onerror = function () {
     document.getElementById('loader').style.display = "none";
 }*/
 
+//adding map
+map = L.map('map').fitWorld();
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 5,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
 //populating the select box*/
-const url = "assets/php/getCountryName.php";
-const xhr = new XMLHttpRequest();
-xhr.onreadystatechange = function() {
-    if (xhr.readyState === 4 && xhr.status === 200) {
-        const response = JSON.parse(xhr.responseText);
+$.ajax({
+    url: "assets/php/getCountryName.php",
+    type: "GET",
+    dataType: "json",
+    success: function(response) {
         if (response.status.name === "ok") {
             let countryInfo = response.data;
             let sortedCountries = []
@@ -23,19 +36,19 @@ xhr.onreadystatechange = function() {
             };
             sortedCountries.sort()
             const dropdown = document.getElementById("countryList");
-            for (var i = 0; i < sortedCountries.length; i++) {
+            for (let i = 0; i < sortedCountries.length; i++) {
                 const option = document.createElement("option");
                 option.text = sortedCountries[i][0];
                 option.setAttribute('id', sortedCountries[i][1])
                 dropdown.add(option);
             }
         }
-}
-};
-xhr.open("GET", url);
-xhr.send();
+    },
+    error: function(jqXHR) {
+        console.log(jqXHR.responseText);
+    }
+});
 
-let userLocation;
 
 //initial page render using user's location
 if (navigator.geolocation) {
@@ -64,8 +77,6 @@ if (navigator.geolocation) {
         }})
     }
 
-    navigator.geolocation.getCurrentPosition(loadUser);
-
     initialBorderSet = (location) => {
     $.ajax({
         url: "assets/php/getCountryBorders.php",
@@ -80,7 +91,8 @@ if (navigator.geolocation) {
                 for (const [key, value] of Object.entries(data)) {
                     if (location === key){ 
                         let latlngs = value;
-                        let borderLayer = L.polygon(latlngs, {color: 'red'}).addTo(map);
+                        polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
+                        console.log(polygon)
                         map.fitBounds(polygon.getBounds());
                         }
                   }
@@ -88,9 +100,9 @@ if (navigator.geolocation) {
             }
     })
 }
+
+console.log(map)
 //Setting borders
-
-
 const selectList = document.getElementById('countryList')
 selectList.addEventListener("change", function() {
     const selectedCountry = selectList.options[selectList.selectedIndex]
@@ -104,11 +116,15 @@ selectList.addEventListener("change", function() {
         },
         success: function(result) {
             if (result.status.name === "ok") {
+                    console.log(polygon)
+                    console.log("test")
+                map.removeLayer(polygon)
                 const data = result.data;
                 for (const [key, value] of Object.entries(data)) {
                     if (selectedCountryId === key){ 
                         let latlngs = value;
-                        let borderLayer = L.polygon(latlngs, {color: 'red'}).addTo(map);
+                        polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
+                        console.log(polygon)
                         map.fitBounds(polygon.getBounds());
                         }
                   }
@@ -119,3 +135,4 @@ selectList.addEventListener("change", function() {
     }
 })
 });
+
