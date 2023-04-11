@@ -2,7 +2,6 @@
 let userLocation;
 let map;
 let polygon = null;
-console.log(polygon)
 
 //map loaded, no loader
 /*document.getElementById('map').onload = function () {
@@ -60,6 +59,7 @@ if (navigator.geolocation) {
   function loadUser(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
+
     $.ajax({
         url: "assets/php/getCountryFromGeoLocation.php",
         type: "POST",
@@ -90,9 +90,9 @@ if (navigator.geolocation) {
                 const data = result.data;
                 for (const [key, value] of Object.entries(data)) {
                     if (location === key){ 
+                        reverseArray(value);
                         let latlngs = value;
                         polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
-                        console.log(polygon)
                         map.fitBounds(polygon.getBounds());
                         }
                   }
@@ -101,7 +101,6 @@ if (navigator.geolocation) {
     })
 }
 
-console.log(map)
 //Setting borders
 const selectList = document.getElementById('countryList')
 selectList.addEventListener("change", function() {
@@ -116,13 +115,15 @@ selectList.addEventListener("change", function() {
         },
         success: function(result) {
             if (result.status.name === "ok") {
-                    console.log(polygon)
-                    console.log("test")
                 map.removeLayer(polygon)
                 const data = result.data;
                 for (const [key, value] of Object.entries(data)) {
                     if (selectedCountryId === key){ 
-                        let latlngs = value;
+                        console.log(value)
+                        let coordinates = value
+                        console.log(coordinates)
+                        let reversedArrays = reverseArray(coordinates);
+                        let latlngs = reversedArrays;
                         polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
                         console.log(polygon)
                         map.fitBounds(polygon.getBounds());
@@ -136,3 +137,10 @@ selectList.addEventListener("change", function() {
 })
 });
 
+function reverseArray(array) {
+    if (Array.isArray(array)) {
+      return array.reverse().map(reverseArray);
+    } else {
+      return array;
+    }
+  }
