@@ -3,6 +3,24 @@ let userLocation;
 let map;
 let polygon = null;
 
+//helper functions
+function reverseArray(array) {
+    if (Array.isArray(array)) {
+      return array.reverse().map(reverseArray);
+    } else {
+      return array;
+    }
+  }
+
+  function selectedInfo(obj) {
+    let chosenInfo = []
+    for (const [key, value] of Object.entries(obj)) {
+        if (key === "capital" || key === "continentName" || key === "currencyCode" || key === "population") {
+            chosenInfo.push([key, value])
+        }
+    } return chosenInfo
+  }
+
 //map loaded, no loader
 /*document.getElementById('map').onload = function () {
     document.getElementById('map').style.display = "block";
@@ -49,17 +67,18 @@ $.ajax({
 });
 
 
-//initial page render using user's location
+//getting permission to use user's location
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(loadUser);
   } else {
     alert("Geolocation is not enabled. Select a country to get started.");
   }
 
+  //rendering map and modals based on user location
   function loadUser(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
-
+    //finding country based on lat & long
     $.ajax({
         url: "assets/php/getCountryFromGeoLocation.php",
         type: "POST",
@@ -71,13 +90,47 @@ if (navigator.geolocation) {
         success: function(result) {
             userLocation = result['data']
             initialBorderSet(userLocation)
-        },
+            //adding info modal
+            $.ajax({
+                url: "http://api.geonames.org/countryInfoJSON",
+                type: "GET",
+                dataType: "json",
+                data: {
+                  username: "kerriemcivor92",
+                  country: userLocation
+                },
+                success: function(result) {
+                  const info = result.geonames[0];
+                  console.log(selectedInfo(info))
+                  },
+                error: function(jqXHR) {
+                  console.log(jqXHR.responseText);
+                }
+              })
+            //adding weather modal
+            $.ajax({
+                url: "https://api.openweathermap.org/data/2.5/forecast",
+                type: "GET",
+                dataType: "json",
+                data: {
+                    lat: latitude,
+                    lon: longitude,
+                    appid: "3e9073c5971886742de9190acd88d5ec",
+                },
+                success: function(result) {
+                    console.log(result)
+                },
+                error: function(jqXHR) {
+                    console.log(jqXHR.responseText);
+                  }
+            })
+            },
         error: function(jqXHR) {
             console.log(jqXHR.responseText);
-        }})
-    }
+        }
+    })}
 
-    initialBorderSet = (location) => {
+    const initialBorderSet = (location) => {
     $.ajax({
         url: "assets/php/getCountryBorders.php",
         type: "POST",
@@ -101,7 +154,7 @@ if (navigator.geolocation) {
     })
 }
 
-//Setting borders
+//Setting renders for all other drop down options
 const selectList = document.getElementById('countryList')
 selectList.addEventListener("change", function() {
     const selectedCountry = selectList.options[selectList.selectedIndex]
@@ -117,30 +170,57 @@ selectList.addEventListener("change", function() {
             if (result.status.name === "ok") {
                 map.removeLayer(polygon)
                 const data = result.data;
+                //adding country info modal
+                $.ajax({
+                    url: "http://api.geonames.org/countryInfoJSON",
+                    type: "GET",
+                    dataType: "json",
+                    data: {
+                      username: "kerriemcivor92",
+                      country: selectedCountryId
+                    },
+                    success: function(result) {
+                      const info = result.geonames[0];
+                      //fix this
+                      console.log(capitalCity)
+                      console.log(info);
+                      console.log(selectedInfo(info))
+                    },
+                    error: function(jqXHR) {
+                      console.log(jqXHR.responseText);
+                    }
+                  });
+                //call to openweather api
+                  //adding weather modal
+            $.ajax({
+                url: "https://api.openweathermap.org/data/2.5/forecast",
+                type: "GET",
+                dataType: "json",
+                data: {
+                    q: 'test',
+                    appid: "3e9073c5971886742de9190acd88d5ec",
+                },
+                success: function(result) {
+                    console.log(result)
+                },
+                error: function(jqXHR) {
+                    console.log(jqXHR.responseText);
+                  }
+            }) 
                 for (const [key, value] of Object.entries(data)) {
                     if (selectedCountryId === key){ 
-                        console.log(value)
                         let coordinates = value
-                        console.log(coordinates)
                         let reversedArrays = reverseArray(coordinates);
                         let latlngs = reversedArrays;
                         polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
-                        console.log(polygon)
                         map.fitBounds(polygon.getBounds());
                         }
-                  }
-                }
-            },
+                    }
+            }
+        },
         error: function(jqXHR) {
             console.log(jqXHR.responseText);
     }
 })
-});
+})
 
-function reverseArray(array) {
-    if (Array.isArray(array)) {
-      return array.reverse().map(reverseArray);
-    } else {
-      return array;
-    }
-  }
