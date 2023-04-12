@@ -6,25 +6,26 @@ let polygon = null;
 //helper functions
 function reverseArray(array) {
     if (Array.isArray(array)) {
-      return array.reverse().map(reverseArray);
+        return array.reverse().map(reverseArray);
     } else {
-      return array;
+        return array;
     }
-  }
+}
 
-  function selectedInfo(obj) {
+function selectedInfo(obj) {
     let chosenInfo = []
     for (const [key, value] of Object.entries(obj)) {
         if (key === "capital" || key === "continentName" || key === "currencyCode" || key === "population") {
             chosenInfo.push([key, value])
         }
-    } return chosenInfo
-  }
+    } 
+    return chosenInfo
+}
 
 //map loaded, no loader
 /*document.getElementById('map').onload = function () {
     document.getElementById('map').style.display = "block";
-    document.getElementById('loader').style.display = "hide";
+    document.getElementById('loader').style.display = "none";
 }
 //error function for map failing to load
 document.getElementById('map').onerror = function () {
@@ -34,10 +35,11 @@ document.getElementById('map').onerror = function () {
 
 //adding map
 map = L.map('map').fitWorld();
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 5,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
+      {
+        maxZoom: 5,
+        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+      }).addTo(map);
 
 //populating the select box*/
 $.ajax({
@@ -70,14 +72,34 @@ $.ajax({
 //getting permission to use user's location
 if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(loadUser);
-  } else {
+    } else {
     alert("Geolocation is not enabled. Select a country to get started.");
-  }
+}
 
-  //rendering map and modals based on user location
-  function loadUser(position) {
+//rendering map and modals based on user location
+function loadUser(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
+    //time modal
+    $.ajax({
+        url: "https://world-time-by-api-ninjas.p.rapidapi.com/v1/worldtime",
+        method: "GET",
+        dataType: "json",
+        data: {
+            lat: latitude,
+            lon: longitude
+        },
+        headers: {
+            "X-RapidAPI-Key": "b0b6fd23e7msh1c298d942139507p1be034jsn6bbebb61879d",
+            "X-RapidAPI-Host": "world-time-by-api-ninjas.p.rapidapi.com"
+        },
+        success: function(response) {
+            console.log(response);
+        },
+        error: function(jqXHR) {
+            console.log(jqXHR.responseText);
+        }
+    });
     //finding country based on lat & long
     $.ajax({
         url: "assets/php/getCountryFromGeoLocation.php",
@@ -101,12 +123,24 @@ if (navigator.geolocation) {
                 },
                 success: function(result) {
                   const info = result.geonames[0];
-                  console.log(selectedInfo(info))
-                  },
+                  const chosenInfo = selectedInfo(info)
+                  const currency = chosenInfo[3][1]
+                  $.ajax({
+                    url: "https://v6.exchangerate-api.com/v6/73bfb2bd0bc1523f98690351/latest/" + currency,
+                    type: "GET",
+                    dataType: "json",
+                    success: function(result) {
+                        console.log(result)
+                    },
+                    error: function(jqXHR) {
+                        console.log(jqXHR.responseText);
+                    }
+                    })
+                },
                 error: function(jqXHR) {
                   console.log(jqXHR.responseText);
                 }
-              })
+            })
             //adding weather modal
             $.ajax({
                 url: "https://api.openweathermap.org/data/2.5/forecast",
@@ -122,15 +156,16 @@ if (navigator.geolocation) {
                 },
                 error: function(jqXHR) {
                     console.log(jqXHR.responseText);
-                  }
+                }
             })
-            },
+        },
         error: function(jqXHR) {
             console.log(jqXHR.responseText);
         }
-    })}
+    })
+}
 
-    const initialBorderSet = (location) => {
+const initialBorderSet = (location) => {
     $.ajax({
         url: "assets/php/getCountryBorders.php",
         type: "POST",
@@ -147,10 +182,10 @@ if (navigator.geolocation) {
                         let latlngs = value;
                         polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
                         map.fitBounds(polygon.getBounds());
-                        }
-                  }
+                    }
                 }
             }
+        }
     })
 }
 
@@ -168,8 +203,18 @@ selectList.addEventListener("change", function() {
         },
         success: function(result) {
             if (result.status.name === "ok") {
-                map.removeLayer(polygon)
                 const data = result.data;
+                //removing original polygon and adding new polygon
+                map.removeLayer(polygon)
+                for (const [key, value] of Object.entries(data)) {
+                    if (selectedCountryId === key){ 
+                        let coordinates = value
+                        let reversedArrays = reverseArray(coordinates);                        
+                        let latlngs = reversedArrays;
+                        polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
+                        map.fitBounds(polygon.getBounds());
+                    }
+                }
                 //adding country info modal
                 $.ajax({
                     url: "http://api.geonames.org/countryInfoJSON",
@@ -177,50 +222,72 @@ selectList.addEventListener("change", function() {
                     dataType: "json",
                     data: {
                       username: "kerriemcivor92",
-                      country: selectedCountryId
+                      country: selectedCountryId,
+                      "X-Fungenerators-Api-Secret": "api_key"
                     },
                     success: function(result) {
-                      const info = result.geonames[0];
-                      //fix this
-                      console.log(capitalCity)
-                      console.log(info);
-                      console.log(selectedInfo(info))
+                        const info = result.geonames[0];
+                        const chosenInfo = selectedInfo(info)
+                        const capitalCity = chosenInfo[0][1]
+                        const currency = chosenInfo[3][1]
+                        console.log(chosenInfo)
+                        //time modal
+                        $.ajax({
+                            url: "https://world-time-by-api-ninjas.p.rapidapi.com/v1/worldtime",
+                            method: "GET",
+                            dataType: "json",
+                            data: {
+                                city: capitalCity
+                            },
+                            headers: {
+                                "X-RapidAPI-Key": "b0b6fd23e7msh1c298d942139507p1be034jsn6bbebb61879d",
+                                "X-RapidAPI-Host": "world-time-by-api-ninjas.p.rapidapi.com"
+                            },
+                           success: function(response) {
+                               console.log(response);
+                            },
+                            error: function(jqXHR) {
+                                console.log(jqXHR.responseText);
+                            }
+                        });
+                        //adding currency exchange
+                        $.ajax({
+                            url: "https://v6.exchangerate-api.com/v6/73bfb2bd0bc1523f98690351/latest/" + currency,
+                            type: "GET",
+                            dataType: "json",
+                            success: function(result) {
+                                console.log(result)
+                            },
+                            error: function(jqXHR) {
+                                console.log(jqXHR.responseText);
+                            }
+                        })
+                      //adding weather modal
+                        $.ajax({
+                            url: "https://api.openweathermap.org/data/2.5/forecast",
+                            type: "GET",
+                            dataType: "json",
+                            data: {
+                                q: capitalCity,
+                                appid: "3e9073c5971886742de9190acd88d5ec",
+                            },
+                            success: function(result) {
+                                console.log(result)
+                            },
+                            error: function(jqXHR) {
+                                console.log(jqXHR.responseText);
+                            }
+                        }) 
                     },
                     error: function(jqXHR) {
                       console.log(jqXHR.responseText);
                     }
-                  });
-                //call to openweather api
-                  //adding weather modal
-            $.ajax({
-                url: "https://api.openweathermap.org/data/2.5/forecast",
-                type: "GET",
-                dataType: "json",
-                data: {
-                    q: 'test',
-                    appid: "3e9073c5971886742de9190acd88d5ec",
-                },
-                success: function(result) {
-                    console.log(result)
-                },
-                error: function(jqXHR) {
-                    console.log(jqXHR.responseText);
-                  }
-            }) 
-                for (const [key, value] of Object.entries(data)) {
-                    if (selectedCountryId === key){ 
-                        let coordinates = value
-                        let reversedArrays = reverseArray(coordinates);
-                        let latlngs = reversedArrays;
-                        polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
-                        map.fitBounds(polygon.getBounds());
-                        }
-                    }
+                });
             }
         },
         error: function(jqXHR) {
             console.log(jqXHR.responseText);
-    }
-})
+        }
+    })
 })
 
