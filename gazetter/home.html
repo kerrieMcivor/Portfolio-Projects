@@ -1,13 +1,12 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <!-- Meta data -->
-	<meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <!-- Jquery Script -->
   <script type="text/javascript" src="assets/js/jquery.js"></script>
 
+  <!-- Meta data -->
+	<meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 	<title>Gazetteer</title>
 	<meta name="description" content="Gazetteer API">
 	<meta name="author" content="Kerrie Mcivor">
@@ -19,32 +18,140 @@
   <!-- Leaflet styling & script -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
-
 </head>
 
 <body>
   <!-- Navbar -->
   <div class="container-fluid bg-light">
     <nav class="navbar justify-content-center">
-    <div class="navbar-header">
-      <a class="navbar-brand" href="#">Gazetteer</a>
-    </div>
+      <div class="navbar-header">
+        <a class="navbar-brand" href="#">Gazetteer</a>
+      </div>
       <!-- Dropdown list -->
       <div class="dropdown">
         <select class="countryList" id="countryList">
           <option>Select a country:</option>
         </select>
       </div>
-  </nav>
+    </nav>
   </div>
 
-  <!-- map div -->
-  <div class ="row" id="map"></div>
-
-    <!-- preloader div 
+  <!-- preloader div 
     <div class="d-flex justify-content-center text-primary" id="loader">
       <div class="spinner-border" role="status"></div>
     </div> -->
+
+  <!-- map div -->
+  <div class ="row" id="map">
+    <div class="btn-group-vertical position-absolute">
+      <!--Modal Button-->
+      <button type="button" class="btn btn-primary w-25 py-3 mb-2 rounded" data-toggle="modal" data-target="#capitalCityModal">Capital City</button>
+      <!-- Modal -->
+      <div class="modal fade" id="capitalCityModal" tabindex="-1" role="dialog" aria-labelledby="capitalCityModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="capitalCityModalLabel">Capital City</h5>
+            </div>
+            <div class="modal-body"> The Capital City of {country} is {capital} </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="capitalCityCloseModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--Modal Button-->
+      <button type="button" class="btn btn-primary w-25 py-3 mb-2 rounded" data-toggle="modal" data-target="#timeModal">Time</button>
+      <!-- Modal -->
+      <div class="modal fade" id="timeModal" tabindex="-1" role="dialog" aria-labelledby="timeModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="timeModalLabel">Time</h5>
+            </div>
+            <div class="modal-body">
+              The time currently in the capital of {country} is <span class="currentTime">xxx</span>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="timeCloseModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--Modal Button-->
+      <button type="button" class="btn btn-primary w-25 py-3 mb-2 rounded" data-toggle="modal" data-target="#weatherModal">Weather</button>
+      <!-- Modal -->
+      <div class="modal fade" id="weatherModal" tabindex="-1" role="dialog" aria-labelledby="weatherModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="weatherModalLabel">Weather</h5>
+            </div>
+            <div class="modal-body"> Here's the upcoming weather for {country}:</div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="weatherCloseModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--Modal Button-->
+      <button type="button" class="btn btn-primary w-25 py-3 mb-2 rounded" data-toggle="modal" data-target="#populationModal">Population</button>
+      <!-- Modal -->
+      <div class="modal fade" id="populationModal" tabindex="-1" role="dialog" aria-labelledby="populationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="populationModalLabel">Population</h5>
+            </div>
+            <div class="modal-body"> The population of {country} is: </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="populationCloseModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--Modal Button-->
+      <button type="button" class="btn btn-primary w-25 py-3 mb-2 rounded" data-toggle="modal" data-target="#currencyModal">Currency</button>
+      <!-- Modal -->
+      <div class="modal fade" id="currencyModal" tabindex="-1" role="dialog" aria-labelledby="currencyModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="currencyModalLabel">Currency</h5>
+            </div>
+            <div class="modal-body">
+              {country} uses the currency of {currency} and the most current exchange rates are as follows:
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="currencyCloseModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!--Modal Button-->
+      <button type="button" class="btn btn-primary w-25 py-3 mb-2 rounded" data-toggle="modal" data-target="#wikipediaModal">Wikipedia</button>
+      <!-- Modal -->
+      <div class="modal fade" id="wikipediaModal" tabindex="-1" role="dialog" aria-labelledby="wikipediaModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="wikipediaModalLabel">Wikipedia</h5>
+            </div>
+            <div class="modal-body">Find out more about {country} on the Wikipedia page here: </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal" id="wikipeidaCloseModal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
 
   <!-- Javascript scripts -->
 	<script src="assets/js/bootstrap.min.js" type="text/javascript"></script>

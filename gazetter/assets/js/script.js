@@ -22,6 +22,28 @@ function selectedInfo(obj) {
     return chosenInfo
 }
 
+//modal functionality
+const modalButtons = document.querySelectorAll('[data-toggle="modal"]');
+const closeButtons = document.querySelectorAll('.modal .btn-secondary');
+const modal = document.querySelectorAll('.modal')
+
+
+modalButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    modal.classList.add('show');
+    modal.style.display = 'block';
+    const modal = document.querySelector(button.dataset.target);
+  });
+});
+
+closeButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    const modal = button.closest('.modal');
+    modal.classList.remove('show');
+    modal.style.display = 'none';
+  });
+});
+
 //map loaded, no loader
 /*document.getElementById('map').onload = function () {
     document.getElementById('map').style.display = "block";
@@ -94,7 +116,13 @@ function loadUser(position) {
             "X-RapidAPI-Host": "world-time-by-api-ninjas.p.rapidapi.com"
         },
         success: function(response) {
-            console.log(response);
+            /*let time = response.hour + "." + response.minute
+            if (time < 12) {
+                time = time + " AM"
+            } else {
+                time = time + " PM"
+            }
+            //modal[1].getElementsByClassName('currentTime')[0].innerHTML = time*/
         },
         error: function(jqXHR) {
             console.log(jqXHR.responseText);
@@ -327,5 +355,4 @@ selectList.addEventListener("change", function() {
             console.log(jqXHR.responseText);
         }
     })
-})
-
+});

@@ -9,3 +9,9 @@
 #map{
   height: 700px;
   }
+
+  .btn-group-vertical {
+    top: 120px;
+    z-index: 999;
+  }
+  
