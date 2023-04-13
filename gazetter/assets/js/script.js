@@ -100,6 +100,23 @@ function loadUser(position) {
             console.log(jqXHR.responseText);
         }
     });
+    //adding wikipedia modal
+    $.ajax({
+        url: "http://api.geonames.org/findNearbyWikipediaJSON",
+        type: "GET",
+        data: {
+          lat: latitude,
+          lng: longitude,
+          username: "kerriemcivor92"
+        },
+        success: function(result) {
+          const info = result.geonames;
+          console.log(info)
+        },
+        error: function(jqXHR) {
+            console.log(jqXHR.responseText);
+        }
+        })
     //finding country based on lat & long
     $.ajax({
         url: "assets/php/getCountryFromGeoLocation.php",
@@ -223,7 +240,6 @@ selectList.addEventListener("change", function() {
                     data: {
                       username: "kerriemcivor92",
                       country: selectedCountryId,
-                      "X-Fungenerators-Api-Secret": "api_key"
                     },
                     success: function(result) {
                         const info = result.geonames[0];
@@ -231,6 +247,7 @@ selectList.addEventListener("change", function() {
                         const capitalCity = chosenInfo[0][1]
                         const currency = chosenInfo[3][1]
                         console.log(chosenInfo)
+                        console.log(info)
                         //time modal
                         $.ajax({
                             url: "https://world-time-by-api-ninjas.p.rapidapi.com/v1/worldtime",
@@ -273,6 +290,27 @@ selectList.addEventListener("change", function() {
                             },
                             success: function(result) {
                                 console.log(result)
+                                cityLatitude = result.city.coord.lat
+                                console.log(cityLatitude)
+                                cityLongitude = result.city.coord.lon
+                                console.log(cityLongitude)
+                                //wikipedia modal
+                                $.ajax({
+                                    url: "http://api.geonames.org/findNearbyWikipediaJSON",
+                                    type: "GET",
+                                    data: {
+                                        lat: cityLatitude,
+                                        lng: cityLongitude,
+                                        username: "kerriemcivor92"
+                                    },
+                                    success: function(result) {
+                                      const info = result.geonames;
+                                      console.log(info)
+                                    },
+                                    error: function(jqXHR) {
+                                        console.log(jqXHR.responseText);
+                                    }
+                                    })
                             },
                             error: function(jqXHR) {
                                 console.log(jqXHR.responseText);
