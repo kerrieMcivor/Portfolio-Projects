@@ -1,6 +1,5 @@
 //global variables
 let userLocation;
-let map;
 let polygon = null;
 
 //helper functions
@@ -27,12 +26,11 @@ const modalButtons = document.querySelectorAll('[data-toggle="modal"]');
 const closeButtons = document.querySelectorAll('.modal .btn-secondary');
 const modal = document.querySelectorAll('.modal')
 
-
 modalButtons.forEach(button => {
   button.addEventListener('click', () => {
+    const modal = document.querySelector(button.dataset.target);
     modal.classList.add('show');
     modal.style.display = 'block';
-    const modal = document.querySelector(button.dataset.target);
   });
 });
 
@@ -44,24 +42,13 @@ closeButtons.forEach(button => {
   });
 });
 
-//map loaded, no loader
-/*document.getElementById('map').onload = function () {
-    document.getElementById('map').style.display = "block";
-    document.getElementById('loader').style.display = "none";
-}
-//error function for map failing to load
-document.getElementById('map').onerror = function () {
-    console.log("Failed to load map");
-    document.getElementById('loader').style.display = "none";
-}*/
-
 //adding map
-map = L.map('map').fitWorld();
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
-      {
+const map = L.map('map').fitWorld();
+const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
+    {
         maxZoom: 5,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-      }).addTo(map);
+    }).addTo(map);
 
 //populating the select box*/
 $.ajax({
@@ -69,27 +56,24 @@ $.ajax({
     type: "GET",
     dataType: "json",
     success: function(response) {
-        if (response.status.name === "ok") {
-            let countryInfo = response.data;
-            let sortedCountries = []
-            for (const country in countryInfo) {
-                sortedCountries.push([country, countryInfo[country]])
-            };
-            sortedCountries.sort()
-            const dropdown = document.getElementById("countryList");
-            for (let i = 0; i < sortedCountries.length; i++) {
-                const option = document.createElement("option");
-                option.text = sortedCountries[i][0];
-                option.setAttribute('id', sortedCountries[i][1])
-                dropdown.add(option);
-            }
-        }
+      if (response.status.name === "ok") {
+        const countryInfo = response.data;
+        const dropdown = document.getElementById("countryList");
+  
+        Object.entries(countryInfo)
+          .sort()
+          .forEach(([country, id]) => {
+            const option = document.createElement("option");
+            option.text = country;
+            option.setAttribute('id', id);
+            dropdown.add(option);
+          });
+      }
     },
     error: function(jqXHR) {
-        console.log(jqXHR.responseText);
+      console.log(jqXHR.responseText);
     }
-});
-
+  });
 
 //getting permission to use user's location
 if (navigator.geolocation) {
@@ -104,28 +88,18 @@ function loadUser(position) {
     const longitude = position.coords.longitude;
     //time modal
     $.ajax({
-        url: "https://world-time-by-api-ninjas.p.rapidapi.com/v1/worldtime",
-        method: "GET",
+        url: "../php/getTime",
+        method: "POST",
         dataType: "json",
         data: {
-            lat: latitude,
-            lon: longitude
-        },
-        headers: {
-            "X-RapidAPI-Key": "b0b6fd23e7msh1c298d942139507p1be034jsn6bbebb61879d",
-            "X-RapidAPI-Host": "world-time-by-api-ninjas.p.rapidapi.com"
-        },
+            latitude: latitude,
+            longitude: longitude}
+        ,
         success: function(response) {
-            /*let time = response.hour + "." + response.minute
-            if (time < 12) {
-                time = time + " AM"
-            } else {
-                time = time + " PM"
-            }
-            //modal[1].getElementsByClassName('currentTime')[0].innerHTML = time*/
+
         },
-        error: function(jqXHR) {
-            console.log(jqXHR.responseText);
+        error: function() {
+            console.log("A error occurred accessing the post array");
         }
     });
     //adding wikipedia modal
@@ -322,6 +296,8 @@ selectList.addEventListener("change", function() {
                                 console.log(cityLatitude)
                                 cityLongitude = result.city.coord.lon
                                 console.log(cityLongitude)
+
+                                
                                 //wikipedia modal
                                 $.ajax({
                                     url: "http://api.geonames.org/findNearbyWikipediaJSON",
