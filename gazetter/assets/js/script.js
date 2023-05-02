@@ -111,7 +111,7 @@ function loadUser(position) {
 
     //finding country based on lat & long
     $.ajax({
-        url: "assets/php/getCountryFromGeoLocation.php",
+        url: "assets/php/getCountryFromGeolocation.php",
         type: "GET",
         dataType: "json",
         data: {
@@ -121,16 +121,32 @@ function loadUser(position) {
         success: function(result) {
             userLocation = result['data']
             initialBorderSet(userLocation)
+            console.log(userLocation)
             //info ajax
             $.ajax({
-                url: "../php/countryInfo.php",
+                url: "assets/php/countryInfo.php",
                 type: "GET",
                 dataType: "json",
                 data: {
                   country: userLocation
                 },
                 success: function(result) {
-                  console.log(result)
+                    let currency = result.data.geonames[0]['currencyCode']
+                    //currency
+                    $.ajax({
+                        url: "assets/php/exchangeRate.php",
+                        type: "GET",
+                        dataType: "json",
+                        data: {
+                        currency: currency
+                        },
+                        success: function(result) {
+                            console.log(result)
+                        },
+                        error: function(jqXHR) {
+                            console.log(jqXHR.responseText);
+                        }
+                    })
                 },
                 error: function(jqXHR) {
                     console.log(jqXHR.responseText);
@@ -162,7 +178,7 @@ function loadUser(position) {
     
     //wikipedia
     $.ajax({
-        url: "../php/wikipedia.php",
+        url: "assets/php/wikipedia.php",
         type: "POST",
         dataType: 'json',
         data: {
@@ -177,26 +193,10 @@ function loadUser(position) {
             console.log(jqXHR.responseText);
         }
     })
-    
-    //currency
-    $.ajax({
-        url: "../php/exchangeRate.php",
-        type: "GET",
-        dataType: "json",
-        data: {
-            currency: 'GBP'
-        },
-        success: function(result) {
-            console.log(result)
-        },
-        error: function(jqXHR) {
-            console.log(jqXHR.responseText);
-        }
-    })
 
     //adding weather modal
     $.ajax({
-        url: "../php/weather.php",
+        url: "assets/php/weather.php",
         type: "GET",
         dataType: "json",
         data: {
@@ -212,7 +212,7 @@ function loadUser(position) {
     })
 }
 
-/*
+
 //Setting renders for all other drop down options
 const selectList = document.getElementById('countryList')
 selectList.addEventListener("change", function() {
@@ -253,8 +253,7 @@ selectList.addEventListener("change", function() {
                         const chosenInfo = selectedInfo(info)
                         const capitalCity = chosenInfo[0][1]
                         const currency = chosenInfo[3][1]
-                        console.log(chosenInfo)
-                        console.log(info)
+                        
                         //time modal
                         $.ajax({
                             url: "https://world-time-by-api-ninjas.p.rapidapi.com/v1/worldtime",
@@ -336,4 +335,4 @@ selectList.addEventListener("change", function() {
             console.log(jqXHR.responseText);
         }
     })
-});*/
+});
