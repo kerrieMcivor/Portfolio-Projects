@@ -3,12 +3,15 @@
 	ini_set('display_errors', 'On');
 	error_reporting(E_ALL);
     $executionStartTime = microtime(true);
-    $url='https://v6.exchangerate-api.com/v6/73bfb2bd0bc1523f98690351/latest/'.$_REQUEST['currency'];
+    $url='https://api.api-ninjas.com/v1/geocoding?city='.$_REQUEST['city'].'&country='.$_REQUEST['country'];
 
     $ch = curl_init();
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_URL,$url);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'X-API-Key: +M8XLizXojPcr8nifMo38g==xfF7ZitXXsO4B1Vg'
+    ]);
 
 	$result=curl_exec($ch);
 

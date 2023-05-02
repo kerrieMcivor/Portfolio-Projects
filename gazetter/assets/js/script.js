@@ -2,23 +2,13 @@
 let userLocation;
 let polygon = null;
 
-//helper functions
+//helper function
 function reverseArray(array) {
     if (Array.isArray(array)) {
         return array.reverse().map(reverseArray);
     } else {
         return array;
     }
-}
-
-function selectedInfo(obj) {
-    let chosenInfo = []
-    for (const [key, value] of Object.entries(obj)) {
-        if (key === "capital" || key === "continentName" || key === "currencyCode" || key === "population") {
-            chosenInfo.push([key, value])
-        }
-    } 
-    return chosenInfo
 }
 
 //modal functionality
@@ -121,7 +111,6 @@ function loadUser(position) {
         success: function(result) {
             userLocation = result['data']
             initialBorderSet(userLocation)
-            console.log(userLocation)
             //info ajax
             $.ajax({
                 url: "assets/php/countryInfo.php",
@@ -241,43 +230,23 @@ selectList.addEventListener("change", function() {
                 }
                 //adding country info modal
                 $.ajax({
-                    url: "http://api.geonames.org/countryInfoJSON",
+                    url: "assets/php/countryInfo.php",
                     type: "GET",
                     dataType: "json",
                     data: {
-                      username: "kerriemcivor92",
-                      country: selectedCountryId,
+                      country: selectedCountryId
                     },
                     success: function(result) {
-                        const info = result.geonames[0];
-                        const chosenInfo = selectedInfo(info)
-                        const capitalCity = chosenInfo[0][1]
-                        const currency = chosenInfo[3][1]
-                        
-                        //time modal
+                        let currency = result.data.geonames[0]['currencyCode']
+                        let capitalCity = result.data.geonames[0]['capital']
+                        //currency
                         $.ajax({
-                            url: "https://world-time-by-api-ninjas.p.rapidapi.com/v1/worldtime",
-                            method: "GET",
-                            dataType: "json",
-                            data: {
-                                city: capitalCity
-                            },
-                            headers: {
-                                "X-RapidAPI-Key": "b0b6fd23e7msh1c298d942139507p1be034jsn6bbebb61879d",
-                                "X-RapidAPI-Host": "world-time-by-api-ninjas.p.rapidapi.com"
-                            },
-                           success: function(response) {
-                               console.log(response);
-                            },
-                            error: function(jqXHR) {
-                                console.log(jqXHR.responseText);
-                            }
-                        });
-                        //adding currency exchange
-                        $.ajax({
-                            url: "https://v6.exchangerate-api.com/v6/73bfb2bd0bc1523f98690351/latest/" + currency,
+                            url: "assets/php/exchangeRate.php",
                             type: "GET",
                             dataType: "json",
+                            data: {
+                            currency: currency
+                            },
                             success: function(result) {
                                 console.log(result)
                             },
@@ -285,45 +254,73 @@ selectList.addEventListener("change", function() {
                                 console.log(jqXHR.responseText);
                             }
                         })
-                      //adding weather modal
+                        //lat & lngs
                         $.ajax({
-                            url: "https://api.openweathermap.org/data/2.5/forecast",
-                            type: "GET",
+                            url: 'assets/php/coords.php',
+                            method: "GET",
                             dataType: "json",
                             data: {
-                                q: capitalCity,
-                                appid: "3e9073c5971886742de9190acd88d5ec",
+                                city: capitalCity,
+                                country: selectedCountryId
                             },
                             success: function(result) {
-                                console.log(result)
-                                cityLatitude = result.city.coord.lat
-                                console.log(cityLatitude)
-                                cityLongitude = result.city.coord.lon
-                                console.log(cityLongitude)
-
-                                
-                                //wikipedia modal
+                                let latitude = result.data[0]['latitude']
+                                let longitude = result.data[0]['longitude']
+                                //time modal
                                 $.ajax({
-                                    url: "http://api.geonames.org/findNearbyWikipediaJSON",
-                                    type: "GET",
+                                    url: 'assets/php/worldtime.php',
+                                    method: "GET",
+                                    dataType: "json",
                                     data: {
-                                        lat: cityLatitude,
-                                        lng: cityLongitude,
-                                        username: "kerriemcivor92"
+                                        lat: latitude,
+                                        lon: longitude
                                     },
                                     success: function(result) {
-                                      const info = result.geonames;
-                                      console.log(info)
+                                        console.log(result)
+                                    },
+                                    error: function(jqXHR) {
+                                        console.log(jqXHR);
+                                    }
+                                });
+                                 //wikipedia
+                                $.ajax({
+                                    url: "assets/php/wikipedia.php",
+                                    type: "POST",
+                                    dataType: 'json',
+                                    data: {
+                                        lat: latitude,
+                                        lng: longitude,
+                                    },
+                                    success: function(result) {
+                                        console.log(result)
+          
+                                    },
+                                    error: function(jqXHR) {
+                                      console.log(jqXHR.responseText);
+                                    }
+                                })
+                                //weather
+                                $.ajax({
+                                    url: "assets/php/weather.php",
+                                    type: "GET",
+                                    dataType: "json",
+                                    data: {
+                                        lat: latitude,
+                                        lon: longitude,
+                                    },
+                                    success: function(result) {
+                                        console.log(result)
                                     },
                                     error: function(jqXHR) {
                                         console.log(jqXHR.responseText);
                                     }
-                                    })
+                                })
                             },
                             error: function(jqXHR) {
-                                console.log(jqXHR.responseText);
+                                console.log(jqXHR);
                             }
-                        }) 
+                        
+                        });
                     },
                     error: function(jqXHR) {
                       console.log(jqXHR.responseText);
