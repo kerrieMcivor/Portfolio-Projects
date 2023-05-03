@@ -1,6 +1,7 @@
 //global variables
 let userLocation;
 let polygon = null;
+let marker = null;
 
 //helper function
 function reverseArray(array) {
@@ -40,6 +41,7 @@ const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
+
 //populating the select box*/
 $.ajax({
     url: "assets/php/getCountryName.php",
@@ -76,6 +78,9 @@ function loadUser(position) {
     const latitude = position.coords.latitude;
     const longitude = position.coords.longitude;
     const initialBorderSet = (location) => {
+        //adding markers
+        marker = L.marker([latitude, longitude]).addTo(map);
+        marker.bindPopup(`You are currently in ${userLocation}`).openPopup()
         $.ajax({
             url: "assets/php/getCountryBorders.php",
             type: "GET",
@@ -219,6 +224,9 @@ selectList.addEventListener("change", function() {
                 const data = result.data;
                 //removing original polygon and adding new polygon
                 map.removeLayer(polygon)
+                if (marker) {
+                    map.removeLayer(marker)
+                }
                 for (const [key, value] of Object.entries(data)) {
                     if (selectedCountryId === key){ 
                         let coordinates = value
@@ -239,6 +247,13 @@ selectList.addEventListener("change", function() {
                     success: function(result) {
                         let currency = result.data.geonames[0]['currencyCode']
                         let capitalCity = result.data.geonames[0]['capital']
+                        if (capitalCity.includes(" ")) {
+                            let capitalArray = capitalCity.split(" ")
+                            console.log(capitalArray)
+
+                        }
+                        console.log(capitalCity)
+                        console.log(selectedCountryId)
                         //currency
                         $.ajax({
                             url: "assets/php/exchangeRate.php",
@@ -265,7 +280,12 @@ selectList.addEventListener("change", function() {
                             },
                             success: function(result) {
                                 let latitude = result.data[0]['latitude']
+                                console.log(latitude)
                                 let longitude = result.data[0]['longitude']
+                                console.log(longitude)
+                                //adding markers
+                                marker = L.marker([latitude, longitude]).addTo(map);
+                                marker.bindPopup(`The capital of ${selectedCountryId} is ${capitalCity}`).openPopup()
                                 //time modal
                                 $.ajax({
                                     url: 'assets/php/worldtime.php',
