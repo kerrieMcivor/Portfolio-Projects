@@ -18,6 +18,11 @@
   <!-- Leaflet styling & script -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css">
   <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+
+  <!-- Leaflet easybutton styling & script -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.css">
+  <script src="https://cdn.jsdelivr.net/npm/leaflet-easybutton@2/src/easy-button.js"></script>
+  <script src="https://kit.fontawesome.com/f3dc4a3aae.js" crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -37,7 +42,15 @@
   </div>
 
   <!-- map div -->
-  <div class ="row" id="map"></div>
+  <div class ="row" id="map">
+    <div class="modal" id="myModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
 
       
   <!-- Javascript scripts -->
