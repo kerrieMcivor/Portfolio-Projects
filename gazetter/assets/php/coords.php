@@ -3,7 +3,7 @@
 	ini_set('display_errors', 'On');
 	error_reporting(E_ALL);
     $executionStartTime = microtime(true);
-    $url='https://api.api-ninjas.com/v1/geocoding?city='.$_REQUEST['city'].'&country='.$_REQUEST['country'];
+    $url='https://api.api-ninjas.com/v1/geocoding?city='.$_REQUEST['city'];
 
     $ch = curl_init();
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);

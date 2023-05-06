@@ -4,6 +4,7 @@ let polygon;
 let marker; 
 
 //helper functions
+//swaps longitude and latitude values 
 function reverseArray(array) {
     if (Array.isArray(array)) {
         return array.reverse().map(reverseArray);
@@ -11,7 +12,7 @@ function reverseArray(array) {
         return array;
     }
 }
-
+//updates modal content
 function changeModal(buttonId, message) {
     const button = document.getElementById(buttonId);
     if (button) {
@@ -21,7 +22,50 @@ function changeModal(buttonId, message) {
         };
     }
 }
-  
+//loads all weather data for all renders
+const convertWeatherData = data => {
+    const weatherlocation_lon = data.coord.lon; 
+    const weatherlocation_lat = data.coord.lat; 
+    const temperature = data.main.temp; // Kelvin
+    const airhumidity = data.main.humidity;
+    const windspeed = data.wind.speed; // Meter per second
+    const winddirection = data.wind.deg; 
+    const cloudcoverage = data.clouds.all;
+    const weatherconditionstring = data.weather[0].main
+    // recalculating
+    const temperaturecelsius = Math.round((temperature - 273) * 100) / 100;  // Converting Kelvin to Celsius
+    const windspeedkmh = Math.round((windspeed * 3.6) * 100) / 100; // Windspeed from m/s in km/h; Round to 2 decimals
+    const windDirections = [
+      "North", "North-Northeast", "Northeast", "East-Northeast",
+      "East", "East-Southeast", "Southeast", "South-Southeast",
+      "South", "South-Southwest", "Southwest", "West-Southwest",
+      "West", "West-Northwest", "Northwest", "North-Northwest"
+    ];
+    const directionIndex = Math.floor((winddirection + 11.25) / 22.5);
+    const winddirectionstring = windDirections[directionIndex % 16]; 
+    changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon} , ${weatherlocation_lat}`)
+}
+//update TimeModal
+const updateTime = data => {
+    const time = `${data['hour']}.${data['minute']}`;
+    const suffix = time < 12 ? 'am' : 'pm';
+    const formattedTime = `${time}${suffix}`;
+    changeModal('timeButton', `The time here is ${formattedTime}`)    
+}
+//update Wiki Modal
+const updateWiki = data => {
+    wiki1Title = data[0]['title']
+    wiki1Url = data[0]['wikipediaUrl']
+    wiki2Title = data[1]['title']
+    wiki2Url = data[1]['wikipediaUrl']
+    wiki3Title = data[2]['title']
+    wiki3Url = data[2]['wikipediaUrl']
+    wiki4Title = data[3]['title']
+    wiki4Url = data[3]['wikipediaUrl']
+    wiki5Title = data[4]['title']
+    wiki5Url = data[4]['wikipediaUrl']
+    changeModal('wikiButton', `Here are some nearby attractions or historical points you might be interested in: <br> <a href="${wiki1Url}">${wiki1Title}</a><br> <a href="${wiki2Url}">${wiki2Title} </a><br> <a href="${wiki3Url}">${wiki3Title}<a><br> <a href="${wiki4Url}">${wiki4Title}<a><br> <a href="${wiki5Url}">${wiki5Title}<a><br>`)
+}
   
 //adding map
 const map = L.map('map').fitWorld();
@@ -46,14 +90,12 @@ $.ajax({
     success: ({ status, data: countryInfo }) => {
         if (status.name === 'ok') {
             const dropdown = $('#countryList');
-            Object.entries(countryInfo).sort()
-            .forEach(([country, id]) => {
-                const option = document.createElement('option');
-                option.text = country;
-                option.setAttribute('id', id);
-                dropdown.append(option);
-            });
-        }
+            dropdown.append(Object.entries(countryInfo)
+              .sort()
+              .map(([country, id]) => `<option id="${id}">${country}</option>`)
+              .join('')
+            );
+          }
     },
     error: function(jqXHR) {
         console.log(jqXHR.responseText);
@@ -80,20 +122,16 @@ function loadUser({ coords: { latitude, longitude } }) {
             data: {location},
             success: ({status, data}) => {
                 if (status.name === "ok") {
-                    for (const [key, value] of Object.entries(data)) {
-                        if (location === key){ 
-                            reverseArray(value);
-                            const latlngs = value;
-                            polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
-                            map.fitBounds(polygon.getBounds());
-                        }
+                    const value = data[location];
+                    if (value) {
+                      polygon = L.polygon(reverseArray(value), { color: 'red' }).addTo(map);
+                      map.fitBounds(polygon.getBounds());
                     }
-                }
+                  }                  
             },
             error: jqXHR => console.log(jqXHR.responseText),
         })
     }
-
     //finding country based on lat & long
     $.ajax({
         url: "assets/php/getCountryFromGeolocation.php",
@@ -126,7 +164,7 @@ function loadUser({ coords: { latitude, longitude } }) {
                         data: { currency },
                         success: ({data}) => {
                             const conversionRate = data['conversion_rates']
-                            const currencyPairs = []
+                            let currencyPairs = []
                             for (const key in conversionRate) {
                                 currencyPairs.push(key + ": " + conversionRate[key] + '<br>')
                             }
@@ -160,16 +198,7 @@ function loadUser({ coords: { latitude, longitude } }) {
             lon: longitude
         },
         success: ({data}) => {
-            let time = `${data['hour']}.${data['minute']}`
-            if (time < 12.00) {
-                time = `${time}am`
-            } else {
-                time = `${time}pm`
-            }
-            function updateTimeModal(){
-                changeModal('timeButton', `The time here is ${time}`)
-            }
-            updateTimeModal()
+            updateTime(data)
         },
         error: (jqXHR) => {
             console.log(jqXHR);
@@ -185,20 +214,7 @@ function loadUser({ coords: { latitude, longitude } }) {
           lng: longitude,
         },
         success: ({data}) => {
-            wiki1Title = data[0]['title']
-            wiki1Url = data[0]['wikipediaUrl']
-            wiki2Title = data[1]['title']
-            wiki2Url = data[1]['wikipediaUrl']
-            wiki3Title = data[2]['title']
-            wiki3Url = data[2]['wikipediaUrl']
-            wiki4Title = data[3]['title']
-            wiki4Url = data[3]['wikipediaUrl']
-            wiki5Title = data[4]['title']
-            wiki5Url = data[4]['wikipediaUrl']
-            function updateWikiModal() {
-                changeModal('wikiButton', `Here are some nearby attractions or historical points you might be interested in: <br> <a href="${wiki1Url}">${wiki1Title}</a><br> <a href="${wiki2Url}">${wiki2Title} </a><br> <a href="${wiki3Url}">${wiki3Title}<a><br> <a href="${wiki4Url}">${wiki4Title}<a><br> <a href="${wiki5Url}">${wiki5Title}<a><br>`)
-            }
-            updateWikiModal()
+            updateWiki(data)
         },
         error: (jqXHR) => {
             console.log(jqXHR.responseText);
@@ -214,59 +230,7 @@ function loadUser({ coords: { latitude, longitude } }) {
             lon: longitude,
         },
         success: ({data}) => {
-            // storing json data in variables
-            const weatherlocation_lon = data.city.coord.lon; 
-            const weatherlocation_lat = data.city.coord.lat; 
-            const temperature = data.list[0].main.temp; // Kelvin
-            const airhumidity = data.list[0].main.humidity;
-            const temperature_min = data.list[0].main.temp_min; // Kelvin
-            const temperature_max = data.list[0].main.temp_max; // Kelvin
-            const windspeed = data.list[0].wind.speed; // Meter per second
-            const winddirection = data.list[0].wind.deg; 
-            const cloudcoverage = data.list[0].clouds.all;
-            const weatherconditionstring = data.list[0].weather[0].main
-            // conversions
-            const temperaturecelsius = Math.round((temperature - 273) * 100) / 100;  // Converting Kelvin to Celsius
-            const windspeedkmh = Math.round((windspeed * 3.6) * 100) / 100; // Windspeed from m/s in km/h; Round to 2 decimals
-            if (winddirection > 348.75 &&  winddirection <= 11.25) {
-                winddirectionstring =  "North";
-            } else if (winddirection > 11.25 &&  winddirection <= 33.75) {
-                winddirectionstring =  "North-Northeast";
-            } else if (winddirection > 33.75 &&  winddirection <= 56.25) {
-                winddirectionstring =  "Northeast";
-            } else if (winddirection > 56.25 &&  winddirection <= 78.75) {
-                winddirectionstring =  "East-Northeast";
-            } else if (winddirection > 78.75 &&  winddirection <= 101.25) {
-                winddirectionstring =  "East";
-            } else if (winddirection > 101.25 &&  winddirection <= 123.75) {
-                winddirectionstring =  "East-Southeast";
-            } else if (winddirection > 123.75 &&  winddirection <= 146.25) {
-                winddirectionstring =  "Southeast";
-            } else if (winddirection > 146.25 &&  winddirection <= 168.75) {
-                winddirectionstring =  "South-Southeast";
-            } else if (winddirection > 168.75 &&  winddirection <= 191.25) {
-                winddirectionstring =  "South";
-            } else if (winddirection > 191.25 &&  winddirection <= 213.75) {
-                winddirectionstring =  "South-Southwest";
-            } else if (winddirection > 213.75 &&  winddirection <= 236.25) {
-                winddirectionstring =  "Southwest";
-            } else if (winddirection > 236.25 &&  winddirection <= 258.75) {
-                winddirectionstring =  "West-Southwest";
-            } else if (winddirection > 258.75 &&  winddirection <= 281.25) {
-                winddirectionstring =  "West";
-            } else if (winddirection > 281.25 &&  winddirection <= 303.75) {
-                winddirectionstring =  "West-Northwest";
-            } else if (winddirection > 303.75 &&  winddirection <= 326.25) {
-                winddirectionstring =  "Northwest";
-            } else if (winddirection > 326.25 &&  winddirection <= 348.75) {
-                winddirectionstring =  "North-Northwest";
-            } else {
-                winddirectionstring =  " - currently no winddata available - ";
-            };
-            function updateWeatherModal () {
-                changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}"% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon} , ${weatherlocation_lat}`);
-            }
-            updateWeatherModal()
+            convertWeatherData(data);     
         },
         error: (jqXHR) => {
             console.log(jqXHR.responseText);
@@ -278,7 +242,7 @@ function loadUser({ coords: { latitude, longitude } }) {
 const selectList = document.getElementById('countryList')
 selectList.addEventListener("change", function() {
     const selectedCountry = selectList.options[selectList.selectedIndex]
-    const selectedCountryId = selectedCountry.id
+    let selectedCountryId = selectedCountry.id
     $.ajax({
         url: "assets/php/getCountryBorders.php",
         type: "POST",
@@ -291,17 +255,11 @@ selectList.addEventListener("change", function() {
                 const data = result.data;
                 //removing original polygon and adding new polygon
                 map.removeLayer(polygon)
-                if (marker) {
-                    map.removeLayer(marker)
-                }
-                for (const [key, value] of Object.entries(data)) {
-                    if (selectedCountryId === key){ 
-                        let coordinates = value
-                        let reversedArrays = reverseArray(coordinates);                        
-                        let latlngs = reversedArrays;
-                        polygon = L.polygon(latlngs, {color: 'red'}).addTo(map);
-                        map.fitBounds(polygon.getBounds());
-                    }
+                const value = data[selectedCountryId];
+                if (value) {
+                    const latlngs = reverseArray(value);
+                    polygon = L.polygon(latlngs, { color: 'red' }).addTo(map);
+                    map.fitBounds(polygon.getBounds());
                 }
                 //adding country info modal
                 $.ajax({
@@ -312,8 +270,20 @@ selectList.addEventListener("change", function() {
                       country: selectedCountryId
                     },
                     success: ({data}) => {
+                        console.log(data)
                         let currency = data.geonames[0]['currencyCode']
                         let capitalCity = data.geonames[0]['capital']
+                        //edge cases - data not avaialable in API
+                        if (data.geonames[0]['countryName'] === "Western Sahara") {
+                            capitalCity = "Laayoune"
+                        }
+                        if (data.geonames[0]['countryName'] === "Palestine") {
+                            capitalCity = "Ramallah"
+                        }
+                        if (data.geonames[0]['countryName'] === "Israel") {
+                            capitalCity = "Jerusalem"
+                        }
+                        formatedCapital = encodeURIComponent(capitalCity)
                         let population = data.geonames[0]['population']
                         function updatePopulationModal () {
                             changeModal('populationButton', `The population is ${population} people!`);
@@ -326,7 +296,7 @@ selectList.addEventListener("change", function() {
                             dataType: "json",
                             data: { currency },
                             success: ({data}) => {
-                                let conversionRate = data['conversion_rates']
+                                const conversionRate = data['conversion_rates']
                                 let currencyPairs = []
                                 for (const key in conversionRate) {
                                     currencyPairs.push(key + ": " + conversionRate[key] + '<br>')
@@ -347,12 +317,12 @@ selectList.addEventListener("change", function() {
                             method: "GET",
                             dataType: "json",
                             data: {
-                                city: capitalCity,
-                                country: selectedCountryId
+                                city: formatedCapital,
                             },
                             success: ({data}) => {
                                 let latitude = data[0]['latitude']
                                 let longitude = data[0]['longitude']
+                                console.log(data)
                                 //adding markers
                                 marker = L.marker([latitude, longitude]).addTo(map);
                                 marker.bindPopup(`The capital city is ${capitalCity}`).openPopup()
@@ -366,16 +336,7 @@ selectList.addEventListener("change", function() {
                                         lon: longitude
                                     },
                                     success: ({data}) => {
-                                        let time = data['hour'] + "." + data['minute']
-                                        if (time < 12.00) {
-                                            time = time + "am"
-                                        } else {
-                                            time = time + "pm"
-                                        }
-                                        function updateTimeModal(){
-                                            changeModal('timeButton', `The time here is ${time}`)
-                                        }
-                                        updateTimeModal()
+                                        updateTime(data)
                                     },
                                     error: (jqXHR) => {
                                         console.log(jqXHR);
@@ -391,20 +352,7 @@ selectList.addEventListener("change", function() {
                                         lng: longitude,
                                     },
                                     success: ({data}) => {
-                                        wiki1Title = data[0]['title']
-                                        wiki1Url = data[0]['wikipediaUrl']
-                                        wiki2Title = data[1]['title']
-                                        wiki2Url = data[1]['wikipediaUrl']
-                                        wiki3Title = data[2]['title']
-                                        wiki3Url = data[2]['wikipediaUrl']
-                                        wiki4Title = data[3]['title']
-                                        wiki4Url = data[3]['wikipediaUrl']
-                                        wiki5Title = data[4]['title']
-                                        wiki5Url = data[4]['wikipediaUrl']
-                                        function updateWikiModal() {
-                                            changeModal('wikiButton', `Here are some nearby attractions or historical points you might be interested in: <br> <a href="${wiki1Url}">${wiki1Title}</a><br> <a href="${wiki2Url}">${wiki2Title} </a><br> <a href="${wiki3Url}">${wiki3Title}<a><br> <a href="${wiki4Url}">${wiki4Title}<a><br> <a href="${wiki5Url}">${wiki5Title}<a><br>`)
-                                        }
-                                        updateWikiModal()
+                                        updateWiki(data)
                                     },
                                     error: (jqXHR) => {
                                       console.log(jqXHR.responseText);
@@ -419,60 +367,8 @@ selectList.addEventListener("change", function() {
                                         lat: latitude,
                                         lon: longitude,
                                     },
-                                    success: function(result) {
-                                        // storing json data in variables
-                                        const weatherlocation_lon = data.city.coord.lon; 
-                                        const weatherlocation_lat = data.city.coord.lat; 
-                                        const temperature = data.list[0].main.temp; // Kelvin
-                                        const airhumidity = data.list[0].main.humidity;
-                                        const temperature_min = data.list[0].main.temp_min; // Kelvin
-                                        const temperature_max = data.list[0].main.temp_max; // Kelvin
-                                        const windspeed = data.list[0].wind.speed; // Meter per second
-                                        const winddirection = data.list[0].wind.deg; 
-                                        const cloudcoverage = data.list[0].clouds.all; 
-                                        const weatherconditionstring = data.list[0].weather[0].main 
-                                        // recalculating
-                                        const temperaturecelsius = Math.round((temperature - 273) * 100) / 100;  // Converting Kelvin to Celsius
-                                        const windspeedkmh = Math.round((windspeed * 3.6) * 100) / 100; // Windspeed from m/s in km/h; Round to 2 decimals
-                                        if (winddirection > 348.75 &&  winddirection <= 11.25) {
-                                            winddirectionstring =  "North";
-                                        } else if (winddirection > 11.25 &&  winddirection <= 33.75) {
-                                            winddirectionstring =  "North-Northeast";
-                                        } else if (winddirection > 33.75 &&  winddirection <= 56.25) {
-                                            winddirectionstring =  "Northeast";
-                                        } else if (winddirection > 56.25 &&  winddirection <= 78.75) {
-                                            winddirectionstring =  "East-Northeast";
-                                        } else if (winddirection > 78.75 &&  winddirection <= 101.25) {
-                                            winddirectionstring =  "East";
-                                        } else if (winddirection > 101.25 &&  winddirection <= 123.75) {
-                                            winddirectionstring =  "East-Southeast";
-                                        } else if (winddirection > 123.75 &&  winddirection <= 146.25) {
-                                            winddirectionstring =  "Southeast";
-                                        } else if (winddirection > 146.25 &&  winddirection <= 168.75) {
-                                            winddirectionstring =  "South-Southeast";
-                                        } else if (winddirection > 168.75 &&  winddirection <= 191.25) {
-                                            winddirectionstring =  "South";
-                                        } else if (winddirection > 191.25 &&  winddirection <= 213.75) {
-                                            winddirectionstring =  "South-Southwest";
-                                        } else if (winddirection > 213.75 &&  winddirection <= 236.25) {
-                                            winddirectionstring =  "Southwest";
-                                        } else if (winddirection > 236.25 &&  winddirection <= 258.75) {
-                                            winddirectionstring =  "West-Southwest";
-                                        } else if (winddirection > 258.75 &&  winddirection <= 281.25) {
-                                            winddirectionstring =  "West";
-                                        } else if (winddirection > 281.25 &&  winddirection <= 303.75) {
-                                            winddirectionstring =  "West-Northwest";
-                                        } else if (winddirection > 303.75 &&  winddirection <= 326.25) {
-                                            winddirectionstring =  "Northwest";
-                                        } else if (winddirection > 326.25 &&  winddirection <= 348.75) {
-                                            winddirectionstring =  "North-Northwest";
-                                        } else {
-                                            winddirectionstring =  " - currently no winddata available - ";
-                                        };
-                                        function updateWeatherModal () {
-                                            changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon} , ${weatherlocation_lat}`);
-                                        }
-                                        updateWeatherModal()
+                                    success: ({data}) => {
+                                        convertWeatherData(data);
                                     },
                                     error: (jqXHR) => {
                                         console.log(jqXHR.responseText);
