@@ -270,7 +270,6 @@ selectList.addEventListener("change", function() {
                       country: selectedCountryId
                     },
                     success: ({data}) => {
-                        console.log(data)
                         let currency = data.geonames[0]['currencyCode']
                         let capitalCity = data.geonames[0]['capital']
                         //edge cases - data not avaialable in API
@@ -322,7 +321,6 @@ selectList.addEventListener("change", function() {
                             success: ({data}) => {
                                 let latitude = data[0]['latitude']
                                 let longitude = data[0]['longitude']
-                                console.log(data)
                                 //adding markers
                                 marker = L.marker([latitude, longitude]).addTo(map);
                                 marker.bindPopup(`The capital city is ${capitalCity}`).openPopup()
