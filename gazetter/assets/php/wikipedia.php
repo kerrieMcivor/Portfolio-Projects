@@ -3,7 +3,7 @@
 	ini_set('display_errors', 'On');
 	error_reporting(E_ALL);
     $executionStartTime = microtime(true);
-    $url='http://api.geonames.org/findNearbyWikipediaJSON?formatted=true&lat='.$_REQUEST['lat'].'&lng='.$_REQUEST['lng'] . '&username=kerriemcivor92&style=full';
+    $url='https://en.wikipedia.org/w/api.php?action=query&format=json&prop=extracts|info&titles='.$_REQUEST['country'].'&exsentences=5&exintro=1&explaintext=1&inprop=url';
     $ch = curl_init();
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -19,7 +19,7 @@
 	$output['status']['name'] = "ok";
 	$output['status']['description'] = "success";
 	$output['status']['returnedIn'] = intval((microtime(true) - $executionStartTime) * 1000) . " ms";
-	$output['data'] = $decode['geonames'];
+	$output['data'] = $decode;
 
     header('Content-Type: application/json; charset=UTF-8');
 

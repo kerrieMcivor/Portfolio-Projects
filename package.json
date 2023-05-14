@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "bootstrap-icons": "^1.10.5",
-    "leaflet-easybutton": "^2.4.0"
+    "leaflet-easybutton": "^2.4.0",
+    "wft-geodb-js-client": "^2.0.0"
   }
 }

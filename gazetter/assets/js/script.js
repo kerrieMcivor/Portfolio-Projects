@@ -4,84 +4,94 @@ let polygon;
 let marker; 
 
 //helper functions
+//error function
+function handleAjaxError(jqXHR) {
+    console.log(jqXHR.responseText);
+}
+
 //swaps longitude and latitude values 
-function reverseArray(array) {
-    if (Array.isArray(array)) {
-        return array.reverse().map(reverseArray);
-    } else {
-        return array;
-    }
-}
+const reverseArray = array => Array.isArray(array) ? array.map(reverseArray).reverse() : array;
+
 //updates modal content
-function changeModal(buttonId, message) {
+const changeModal = (buttonId, message) => {
     const button = document.getElementById(buttonId);
-    if (button) {
-      button.onclick = function() {
-            $('#myModal').modal('show');
-            $('.modal-body').html(message);
-        };
-    }
-}
+    button?.addEventListener('click', () => {
+      $('#myModal').modal('show');
+      $('.modal-body').html(message);
+    });
+};
+
 //loads all weather data for all renders
-const convertWeatherData = data => {
-    const weatherlocation_lon = data.coord.lon; 
-    const weatherlocation_lat = data.coord.lat; 
-    const temperature = data.main.temp; // Kelvin
-    const airhumidity = data.main.humidity;
-    const windspeed = data.wind.speed; // Meter per second
-    const winddirection = data.wind.deg; 
-    const cloudcoverage = data.clouds.all;
-    const weatherconditionstring = data.weather[0].main
-    // recalculating
-    const temperaturecelsius = Math.round((temperature - 273) * 100) / 100;  // Converting Kelvin to Celsius
+const convertWeatherData = ({coord: {lon: weatherlocation_lon, lat: weatherlocation_lat}, main: {temp: temperature, humidity: airhumidity}, wind: {speed: windspeed, deg: winddirection}, clouds: {all: cloudcoverage}, weather: [{main: weatherconditionstring}]}) => {
+    // Recalculating
+    const temperaturecelsius = Math.round((temperature - 273) * 100) / 100; // Converting Kelvin to Celsius
     const windspeedkmh = Math.round((windspeed * 3.6) * 100) / 100; // Windspeed from m/s in km/h; Round to 2 decimals
-    const windDirections = [
-      "North", "North-Northeast", "Northeast", "East-Northeast",
-      "East", "East-Southeast", "Southeast", "South-Southeast",
-      "South", "South-Southwest", "Southwest", "West-Southwest",
-      "West", "West-Northwest", "Northwest", "North-Northwest"
-    ];
+    const windDirections = ["North", "North-Northeast", "Northeast", "East-Northeast", "East", "East-Southeast", "Southeast", "South-Southeast", "South", "South-Southwest", "Southwest", "West-Southwest", "West", "West-Northwest", "Northwest", "North-Northwest"];
     const directionIndex = Math.floor((winddirection + 11.25) / 22.5);
-    const winddirectionstring = windDirections[directionIndex % 16]; 
-    changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon} , ${weatherlocation_lat}`)
-}
-//update TimeModal
-const updateTime = data => {
-    const time = `${data['hour']}.${data['minute']}`;
-    const suffix = time < 12 ? 'am' : 'pm';
-    const formattedTime = `${time}${suffix}`;
-    changeModal('timeButton', `The time here is ${formattedTime}`)    
-}
+    const winddirectionstring = windDirections[directionIndex % 16];
+    changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon}, ${weatherlocation_lat}`);
+};
+  
 //update Wiki Modal
-const updateWiki = data => {
-    wiki1Title = data[0]['title']
-    wiki1Url = data[0]['wikipediaUrl']
-    wiki2Title = data[1]['title']
-    wiki2Url = data[1]['wikipediaUrl']
-    wiki3Title = data[2]['title']
-    wiki3Url = data[2]['wikipediaUrl']
-    wiki4Title = data[3]['title']
-    wiki4Url = data[3]['wikipediaUrl']
-    wiki5Title = data[4]['title']
-    wiki5Url = data[4]['wikipediaUrl']
-    changeModal('wikiButton', `Here are some nearby attractions or historical points you might be interested in: <br> <a href="${wiki1Url}">${wiki1Title}</a><br> <a href="${wiki2Url}">${wiki2Title} </a><br> <a href="${wiki3Url}">${wiki3Title}<a><br> <a href="${wiki4Url}">${wiki4Title}<a><br> <a href="${wiki5Url}">${wiki5Title}<a><br>`)
+const updateWiki = ({query: {pages}}) => {
+    const {extract, title, fullurl: url} = pages[Object.keys(pages)[0]];
+    const shortenedExtract = extract.substring(0, 600);
+    changeModal('wikiButton', `${title} <br><br> ${shortenedExtract}...<br><br>Read more here: <a href=${url}>Wiki Page<a>`);
+};  
+
+//add commas to population
+function addCommas(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+}  
+
+//add airports
+const airports = data => {
+    data.forEach(({ name, latitude, longitude }) => {
+      L.marker([latitude, longitude], { icon: plane })
+        .addTo(map)
+        .on('click', function() {
+          this.bindPopup(name).openPopup();
+        });
+    });
+}  
+
+//remove markers
+function removeAllMarkersAndPopups() {
+    map.eachLayer(function (layer) {
+      if (layer instanceof L.Marker || layer instanceof L.Popup) {
+        map.removeLayer(layer);
+      }
+    });
 }
   
 //adding map
 const map = L.map('map').fitWorld();
 const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
     {
-        maxZoom: 5,
+        maxZoom: 10,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
 //adding buttons
-const populationButton = L.easyButton('fa fa-users', function(btn, map) {}, { id: 'populationButton' }).addTo(map);
+const infoButton = L.easyButton('fa fa-info-circle', function(btn, map) {}, { id: 'infoButton' }).addTo(map);
 const currencyButton = L.easyButton('fa fa-usd', function(btn, map) {}, { id: 'currencyButton' }).addTo(map);
 const wikiButton = L.easyButton('fa-wikipedia-w', function(btn, map) {}, { id: 'wikiButton' }).addTo(map);
-const timeButton = L.easyButton('fa fa-clock-o', function(btn, map) {}, { id: 'timeButton' }).addTo(map);
 const weatherButton = L.easyButton('fa-sun-o', function(btn, map) {}, { id: 'weatherButton' }).addTo(map);
 
+//extra markers
+const thumbtack = L.ExtraMarkers.icon({
+    icon: 'fa-thumb-tack',
+    prefix: 'fa',
+    extraClasses: 'fa-1x',
+    iconColor: 'blue'
+});
+
+const plane = L.ExtraMarkers.icon({
+    icon: 'fa-plane',
+    prefix: 'fa',
+    extraClasses: 'fa-1x',
+    iconColor: 'black'
+});
 //populating the select box*/
 $.ajax({
     url: "assets/php/getCountryName.php",
@@ -103,18 +113,11 @@ $.ajax({
 });
 
 //getting permission to use user's location
-if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(loadUser);
-} else {
-    alert("Geolocation is not enabled. Select a country to get started.");
-}
+navigator.geolocation ? navigator.geolocation.getCurrentPosition(loadUser) : alert("Geolocation is not enabled. Select a country to get started.");
 
 //rendering map and modals based on user location
 function loadUser({ coords: { latitude, longitude } }) {
     const initialBorderSet = location => {
-        //adding markers
-        marker = L.marker([latitude, longitude]).addTo(map);
-        marker.bindPopup(`You are currently in ${userLocation}`).openPopup()
         $.ajax({
             url: "assets/php/getCountryBorders.php",
             type: "GET",
@@ -129,7 +132,7 @@ function loadUser({ coords: { latitude, longitude } }) {
                     }
                   }                  
             },
-            error: jqXHR => console.log(jqXHR.responseText),
+            error: handleAjaxError
         })
     }
     //finding country based on lat & long
@@ -141,6 +144,26 @@ function loadUser({ coords: { latitude, longitude } }) {
         success: ({data}) => {
             userLocation = data;
             initialBorderSet(userLocation)
+            //load major cities
+            $.ajax({
+                url: "assets/php/cities.php",
+                type: "GET",
+                dataType: "json",
+                data: {
+                    countryCode: userLocation
+                },
+                success: ({data}) => {
+                    data.data.forEach(city => {
+                        const {name: cityName, latitude: cityLatitude, longitude: cityLongitude} = city;
+                        const marker = L.marker([cityLatitude, cityLongitude], {icon: thumbtack}).addTo(map).bindPopup(cityName);
+                        marker.on('click', () => {
+                            marker.openPopup();
+                        });
+                    });
+                    
+                },
+                error: handleAjaxError
+            })
             //info ajax
             $.ajax({
                 url: "assets/php/countryInfo.php",
@@ -150,76 +173,80 @@ function loadUser({ coords: { latitude, longitude } }) {
                     country: userLocation
                 },
                 success: ({data}) => {
-                    const currency = data.geonames[0]['currencyCode']
-                    const population = data.geonames[0]['population']
-                    function updatePopulationModal () {
-                        changeModal('populationButton', `The population is ${population} people!`);
-                    }
-                    updatePopulationModal()
-                    //currency
+                    const { countryCode, capital, continent} = data.geonames[0];
+                    const country = data.geonames[0]['countryName']
+                    const currency = data.geonames[0]['currencyCode'];
+                    const formattedCountry = encodeURIComponent(country);
+                    let population = addCommas(data.geonames[0].population);
+                    //airports
                     $.ajax({
-                        url: "assets/php/exchangeRate.php",
-                        type: "GET",
-                        dataType: "json",
-                        data: { currency },
-                        success: ({data}) => {
-                            const conversionRate = data['conversion_rates']
-                            let currencyPairs = []
-                            for (const key in conversionRate) {
-                                currencyPairs.push(key + ": " + conversionRate[key] + '<br>')
-                            }
-                            currencyPairs = currencyPairs.join(" ")
-                            function updateCurrencyModal() {
-                                changeModal('currencyButton', `The currency in ${userLocation} is ${currency} and the exchange rates are as follows: <br> ${currencyPairs}.`)
-                            }
-                            updateCurrencyModal()
+                        url: "assets/php/airports.php",
+                        type: "POST",
+                        dataType: 'json',
+                        data: {
+                            country: countryCode
                         },
-                        error: (jqXHR) => {
-                            console.log(jqXHR.responseText);
-                        }
+                        success: ({data}) => {
+                            airports(data)
+                        },
+                        error: handleAjaxError
                     })
-                },
-                error: (jqXHR) => {
-                    console.log(jqXHR.responseText);
-                }
+                    //wikipedia
+                    $.ajax({
+                        url: "assets/php/wikipedia.php",
+                        type: "POST",
+                        dataType: 'json',
+                        data: {
+                            country: formattedCountry
+                        },
+                        success: ({data}) => {
+                            updateWiki(data)
+                        },
+                        error: handleAjaxError
+                    })
+                     //time modal
+                    $.ajax({
+                        url: 'assets/php/worldtime.php',
+                        method: "GET",
+                        dataType: "json",
+                        data: {
+                        lat: latitude,
+                        lon: longitude
+                    },
+                    success: ({data}) => {
+                        const time = `${data['hour']}.${data['minute']}`;
+                        const suffix = time < 12 ? 'am' : 'pm';
+                        const formattedTime = `${time}${suffix}`;
+                        const infoModal = () => {
+                            let flagurl=`https://flagsapi.com/${countryCode}/shiny/64.png`;
+                            changeModal('infoButton', `<img src=${flagurl}> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
+                        }
+                        infoModal()   
+                    },
+                    error: handleAjaxError
+                })
+                //currency
+                $.ajax({
+                    url: "assets/php/exchangeRate.php",
+                    type: "GET",
+                    dataType: "json",
+                    data: { currency },
+                    success: ({data}) => {
+                        const conversionRate = data['conversion_rates'];
+                        const dropdownElement = 'Please select your currency below to see the conversion rate:<br><br><select id="currencyList">' +
+                        Object.entries(conversionRate)
+                        .map(([key, conversion]) => `<option value="${key}">${key} = ${conversion}</option>`)
+                        .join('') + '</select>';
+                        changeModal('currencyButton', dropdownElement);
+                    },
+                    error: handleAjaxError
+                })
+            },
+            error: handleAjaxError
             });
         },
-        error: (jqXHR) => {
-            console.log(jqXHR.responseText);
-        }
-    })
-    //time modal
-    $.ajax({
-        url: 'assets/php/worldtime.php',
-        method: "GET",
-        dataType: "json",
-        data: {
-            lat: latitude,
-            lon: longitude
-        },
-        success: ({data}) => {
-            updateTime(data)
-        },
-        error: (jqXHR) => {
-            console.log(jqXHR);
-        }
+        error: handleAjaxError
     });
-    //wikipedia
-    $.ajax({
-        url: "assets/php/wikipedia.php",
-        type: "POST",
-        dataType: 'json',
-        data: {
-          lat: latitude,
-          lng: longitude,
-        },
-        success: ({data}) => {
-            updateWiki(data)
-        },
-        error: (jqXHR) => {
-            console.log(jqXHR.responseText);
-        }
-    })
     //adding weather modal
     $.ajax({
         url: "assets/php/weather.php",
@@ -232,15 +259,16 @@ function loadUser({ coords: { latitude, longitude } }) {
         success: ({data}) => {
             convertWeatherData(data);     
         },
-        error: (jqXHR) => {
-            console.log(jqXHR.responseText);
-        }
+        error: handleAjaxError
     })
 }
 
 //Setting renders for all other drop down options
 const selectList = document.getElementById('countryList')
 selectList.addEventListener("change", function() {
+    //removing polygon and markers
+    removeAllMarkersAndPopups();
+    map.removeLayer(polygon);
     const selectedCountry = selectList.options[selectList.selectedIndex]
     let selectedCountryId = selectedCountry.id
     $.ajax({
@@ -252,15 +280,10 @@ selectList.addEventListener("change", function() {
         },
         success: function(result) {
             if (result.status.name === "ok") {
-                const data = result.data;
-                //removing original polygon and adding new polygon
-                map.removeLayer(polygon)
-                const value = data[selectedCountryId];
-                if (value) {
-                    const latlngs = reverseArray(value);
-                    polygon = L.polygon(latlngs, { color: 'red' }).addTo(map);
-                    map.fitBounds(polygon.getBounds());
-                }
+                const value = result.data[selectedCountryId];
+                const latlngs = reverseArray(value);
+                polygon = L.polygon(latlngs, { color: 'red' }).addTo(map);
+                map.fitBounds(polygon.getBounds());
                 //adding country info modal
                 $.ajax({
                     url: "assets/php/countryInfo.php",
@@ -270,47 +293,45 @@ selectList.addEventListener("change", function() {
                       country: selectedCountryId
                     },
                     success: ({data}) => {
-                        let currency = data.geonames[0]['currencyCode']
-                        let capitalCity = data.geonames[0]['capital']
+                        const { currencyCode: currency, capital, countryName: country, continentName: continent, countryCode } = data.geonames[0];
+                        const formattedCountry = encodeURIComponent(country);
+                         //airports
+                        $.ajax({
+                            url: "assets/php/airports.php",
+                            type: "POST",
+                            dataType: 'json',
+                            data: {
+                                country: countryCode
+                            },
+                            success: ({data}) => {
+                                airports(data)
+                            },
+                            error: handleAjaxError
+                        })
+                        $.ajax({
+                            url: "assets/php/wikipedia.php",
+                            type: "POST",
+                            dataType: 'json',
+                            data: {
+                                country: formattedCountry
+                            },
+                            success: ({data}) => {
+                                updateWiki(data)
+                            },
+                            error: handleAjaxError
+                        })
                         //edge cases - data not avaialable in API
                         if (data.geonames[0]['countryName'] === "Western Sahara") {
-                            capitalCity = "Laayoune"
+                            capital = "Laayoune"
                         }
                         if (data.geonames[0]['countryName'] === "Palestine") {
-                            capitalCity = "Ramallah"
+                            capital = "Ramallah"
                         }
                         if (data.geonames[0]['countryName'] === "Israel") {
-                            capitalCity = "Jerusalem"
+                            capital = "Jerusalem"
                         }
-                        formatedCapital = encodeURIComponent(capitalCity)
-                        let population = data.geonames[0]['population']
-                        function updatePopulationModal () {
-                            changeModal('populationButton', `The population is ${population} people!`);
-                        }
-                        updatePopulationModal()
-                        //currency
-                        $.ajax({
-                            url: "assets/php/exchangeRate.php",
-                            type: "GET",
-                            dataType: "json",
-                            data: { currency },
-                            success: ({data}) => {
-                                const conversionRate = data['conversion_rates']
-                                let currencyPairs = []
-                                for (const key in conversionRate) {
-                                    currencyPairs.push(key + ": " + conversionRate[key] + '<br>')
-                                }
-                                currencyPairs = currencyPairs.join(" ")
-                                function updateCurrencyModal() {
-                                    changeModal('currencyButton', `The currency in ${selectedCountryId} is ${currency} and the exchange rates are as follows: <br> ${currencyPairs}.`)
-                                }
-                                updateCurrencyModal()
-                            },
-                            error: (jqXHR) => {
-                                console.log(jqXHR.responseText);
-                            }
-                        })
-                        //lat & lngs
+                        formatedCapital = encodeURIComponent(capital)
+                        let population = addCommas(data.geonames[0]['population']);
                         $.ajax({
                             url: 'assets/php/coords.php',
                             method: "GET",
@@ -322,8 +343,8 @@ selectList.addEventListener("change", function() {
                                 let latitude = data[0]['latitude']
                                 let longitude = data[0]['longitude']
                                 //adding markers
-                                marker = L.marker([latitude, longitude]).addTo(map);
-                                marker.bindPopup(`The capital city is ${capitalCity}`).openPopup()
+                                let capitalMarker = L.marker([latitude, longitude], {icon: thumbtack}).addTo(map) 
+                                capitalMarker.bindPopup(`The capital city is ${capital}`).openPopup()
                                 //time modal
                                 $.ajax({
                                     url: 'assets/php/worldtime.php',
@@ -334,27 +355,50 @@ selectList.addEventListener("change", function() {
                                         lon: longitude
                                     },
                                     success: ({data}) => {
-                                        updateTime(data)
+                                        const time = `${data['hour']}.${data['minute']}`;
+                                        const suffix = time < 12 ? 'am' : 'pm';
+                                        const formattedTime = `${time}${suffix}`;
+                                        const infoModal = () => {
+                                            let flagurl=`https://flagsapi.com/${countryCode}/shiny/64.png`;
+                                            changeModal('infoButton', `<img src=${flagurl}> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
+                                        }
+                                        infoModal() 
                                     },
-                                    error: (jqXHR) => {
-                                        console.log(jqXHR);
-                                    }
+                                    error: handleAjaxError
                                 });
-                                 //wikipedia
+                                //currency
                                 $.ajax({
-                                    url: "assets/php/wikipedia.php",
-                                    type: "POST",
-                                    dataType: 'json',
+                                    url: "assets/php/exchangeRate.php",
+                                    type: "GET",
+                                    dataType: "json",
+                                    data: { currency },
+                                    success: ({data}) => {
+                                        const conversionRate = data.conversion_rates;
+                                        const dropdownElement = `Please select your currency below to see the conversion rate:<br><br><select id="currencyList">${Object.entries(conversionRate).map(([key, value]) => `<option value="${key}">${key} = ${value}</option>`).join('')}</select>`;
+                                        changeModal('currencyButton', dropdownElement);
+                                        updateCurrencyModal()
+                                    },
+                                    error: handleAjaxError
+                                })
+                                //major cities/areas
+                                $.ajax({
+                                    url: "assets/php/cities.php",
+                                    type: "GET",
+                                    dataType: "json",
                                     data: {
-                                        lat: latitude,
-                                        lng: longitude,
+                                        countryCode: selectedCountryId
                                     },
                                     success: ({data}) => {
-                                        updateWiki(data)
+                                        data.data.forEach(city => {
+                                            const { name, latitude, longitude } = city;
+                                            L.marker([latitude, longitude], { icon: thumbtack })
+                                            .addTo(map)
+                                            .on('click', function() {
+                                                this.bindPopup(name).openPopup();
+                                            });
+                                        });
                                     },
-                                    error: (jqXHR) => {
-                                      console.log(jqXHR.responseText);
-                                    }
+                                    error: handleAjaxError
                                 })
                                 //weather
                                 $.ajax({
@@ -368,24 +412,16 @@ selectList.addEventListener("change", function() {
                                     success: ({data}) => {
                                         convertWeatherData(data);
                                     },
-                                    error: (jqXHR) => {
-                                        console.log(jqXHR.responseText);
-                                    }
+                                    error: handleAjaxError
                                 })
                             },
-                            error: (jqXHR) => {
-                                console.log(jqXHR);
-                            }
+                            error: handleAjaxError
                         });
                     },
-                    error: (jqXHR) => {
-                      console.log(jqXHR.responseText);
-                    }
+                    error: handleAjaxError
                 });
             }
         },
-        error: (jqXHR) => {
-            console.log(jqXHR.responseText);
-        }
+        error: handleAjaxError
     })
 });
