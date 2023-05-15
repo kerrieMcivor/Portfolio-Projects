@@ -66,9 +66,10 @@ function removeAllMarkersAndPopups() {
   
 //adding map
 const map = L.map('map').fitWorld();
+map.zoomControl.remove();
 const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
     {
-        maxZoom: 10,
+        //maxZoom: 10,
         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }).addTo(map);
 
