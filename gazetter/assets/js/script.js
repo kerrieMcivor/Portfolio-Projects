@@ -31,6 +31,31 @@ const convertWeatherData = ({coord: {lon: weatherlocation_lon, lat: weatherlocat
     const winddirectionstring = windDirections[directionIndex % 16];
     changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon}, ${weatherlocation_lat}`);
 };
+
+//update football
+const updateFootball = (data) => {
+    if (data.countries === null) {
+        changeModal('footballButton', "Unfortunately this country doesn't compete at an international level...yet!")
+    return;
+    }
+        Object.values(data).forEach((array) => {
+          for (let league of array) {
+            if (league.strGender === 'Male' && league.intDivision === "99" || league.strGender === 'Male' && league.intDivision === '1') {
+              const leagueName = league.strLeague;
+              const website = league.strWebsite;
+              const description = league.strDescriptionEN.substring(0, 600);
+              const image = league.strBadge + '/tiny';
+              changeModal('footballButton', `<img src=${image} style="max-width: 98%; max-height: 400px;"><br><br>${leagueName} <br><br>${description}...<a href=${website}>Find out more</a>`);
+            }}
+        });
+}
+
+//add photo
+const addPhoto = data => {
+    const result = (data.hits[0])
+    const image = result.webformatURL;
+    changeModal('cameraButton', `A little glimspe of the life & country...<br><br><img src=${image} alt="Preview Image" style="max-width: 98%; max-height: 400px;">`)
+}
   
 //update Wiki Modal
 const updateWiki = ({query: {pages}}) => {
@@ -78,6 +103,8 @@ const infoButton = L.easyButton('fa fa-info-circle', function(btn, map) {}, { id
 const currencyButton = L.easyButton('fa fa-usd', function(btn, map) {}, { id: 'currencyButton' }).addTo(map);
 const wikiButton = L.easyButton('fa-wikipedia-w', function(btn, map) {}, { id: 'wikiButton' }).addTo(map);
 const weatherButton = L.easyButton('fa-sun-o', function(btn, map) {}, { id: 'weatherButton' }).addTo(map);
+const footballButton = L.easyButton('fa-futbol-o', function(btn, map) {}, { id: 'footballButton' }).addTo(map);
+const cameraButton = L.easyButton('fa-camera-retro', function(btn, map) {}, { id: 'cameraButton' }).addTo(map);
 
 //extra markers
 const thumbtack = L.ExtraMarkers.icon({
@@ -161,7 +188,7 @@ function loadUser({ coords: { latitude, longitude } }) {
                             marker.openPopup();
                         });
                     });
-                    
+                     
                 },
                 error: handleAjaxError
             })
@@ -192,6 +219,32 @@ function loadUser({ coords: { latitude, longitude } }) {
                         },
                         error: handleAjaxError
                     })
+                    //photos
+                    $.ajax({
+                        url: "assets/php/photos.php",
+                        type: "POST",
+                        dataType: 'json',
+                        data: {
+                            country: formattedCountry
+                        },
+                        success: ({data}) => {
+                            addPhoto(data)
+                        },
+                        error: handleAjaxError
+                    })
+                     //football
+                    $.ajax({
+                        url: "assets/php/football.php",
+                        type: "POST",
+                        dataType: 'json',
+                        data: {
+                            country: formattedCountry
+                        },
+                        success: ({data}) => {
+                           updateFootball(data);
+                        },
+                        error: handleAjaxError
+                    })
                     //wikipedia
                     $.ajax({
                         url: "assets/php/wikipedia.php",
@@ -201,7 +254,7 @@ function loadUser({ coords: { latitude, longitude } }) {
                             country: formattedCountry
                         },
                         success: ({data}) => {
-                            updateWiki(data)
+                            updateWiki(data);
                         },
                         error: handleAjaxError
                     })
@@ -310,6 +363,32 @@ selectList.addEventListener("change", function() {
                             error: handleAjaxError
                         })
                         $.ajax({
+                            url: "assets/php/photos.php",
+                            type: "POST",
+                            dataType: 'json',
+                            data: {
+                                country: formattedCountry
+                            },
+                            success: ({data}) => {
+                                addPhoto(data)
+                            },
+                            error: handleAjaxError
+                        })
+                        //football
+                        $.ajax({
+                            url: "assets/php/football.php",
+                            type: "POST",
+                            dataType: 'json',
+                            data: {
+                                country: formattedCountry
+                            },
+                            success: ({data}) => {
+                                updateFootball(data)
+                            },
+                            error: handleAjaxError
+                        })
+                        //wiki
+                        $.ajax({
                             url: "assets/php/wikipedia.php",
                             type: "POST",
                             dataType: 'json',
@@ -374,10 +453,12 @@ selectList.addEventListener("change", function() {
                                     dataType: "json",
                                     data: { currency },
                                     success: ({data}) => {
-                                        const conversionRate = data.conversion_rates;
-                                        const dropdownElement = `Please select your currency below to see the conversion rate:<br><br><select id="currencyList">${Object.entries(conversionRate).map(([key, value]) => `<option value="${key}">${key} = ${value}</option>`).join('')}</select>`;
+                                        const conversionRate = data['conversion_rates'];
+                                        const dropdownElement = 'Please select your currency below to see the conversion rate:<br><br><select id="currencyList">' +
+                                        Object.entries(conversionRate)
+                                        .map(([key, conversion]) => `<option value="${key}">${key} = ${conversion}</option>`)
+                                        .join('') + '</select>';
                                         changeModal('currencyButton', dropdownElement);
-                                        updateCurrencyModal()
                                     },
                                     error: handleAjaxError
                                 })
