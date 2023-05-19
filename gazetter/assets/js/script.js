@@ -1,3 +1,4 @@
+function onLoad () {
 //global variables
 let userLocation;
 let polygon;
@@ -13,13 +14,16 @@ function handleAjaxError(jqXHR) {
 const reverseArray = array => Array.isArray(array) ? array.map(reverseArray).reverse() : array;
 
 //updates modal content
-const changeModal = (buttonId, message) => {
-    const button = document.getElementById(buttonId);
-    button?.addEventListener('click', () => {
-      $('#myModal').modal('show');
+const changeModal = (buttonId, title, message) => {
+    const buttonElement = document.getElementById(buttonId);
+    buttonElement?.addEventListener('click', () => {
+      const modalTitleElement = document.querySelector('.modal-title');
+      modalTitleElement.textContent = title;
       $('.modal-body').html(message);
+      $('#myModal').modal('show');
     });
-};
+  };
+  
 
 //loads all weather data for all renders
 const convertWeatherData = ({coord: {lon: weatherlocation_lon, lat: weatherlocation_lat}, main: {temp: temperature, humidity: airhumidity}, wind: {speed: windspeed, deg: winddirection}, clouds: {all: cloudcoverage}, weather: [{main: weatherconditionstring}]}) => {
@@ -29,23 +33,43 @@ const convertWeatherData = ({coord: {lon: weatherlocation_lon, lat: weatherlocat
     const windDirections = ["North", "North-Northeast", "Northeast", "East-Northeast", "East", "East-Southeast", "Southeast", "South-Southeast", "South", "South-Southwest", "Southwest", "West-Southwest", "West", "West-Northwest", "Northwest", "North-Northwest"];
     const directionIndex = Math.floor((winddirection + 11.25) / 22.5);
     const winddirectionstring = windDirections[directionIndex % 16];
-    changeModal('weatherButton', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon}, ${weatherlocation_lat}`);
+    changeModal('weatherButton', 'Weather', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon}, ${weatherlocation_lat}`);
 };
+
+//update currency
+function updateCurrencyModal(data) {
+    // Update dropdown list
+    const currencyList = document.getElementById('currencyList');
+    currencyList.innerHTML = Object.keys(data['conversion_rates'])
+      .map(key => `<option value="${key}">${key}</option>`)
+      .join('');
+  
+    // Convert amount on button click
+    const convertButton = document.getElementById('convertButton');
+    convertButton.addEventListener('click', () => {
+      const selectedCurrency = currencyList.value;
+      const amount = parseFloat(document.getElementById('amountInput').value);
+      const conversionRate = data['conversion_rates'][selectedCurrency];
+      const convertedAmount = amount * conversionRate;
+      document.getElementById('conversionResult').innerText = convertedAmount;
+    });
+  }
+  
 
 //update football
 const updateFootball = (data) => {
     if (data.countries === null) {
-        changeModal('footballButton', "Unfortunately this country doesn't compete at an international level...yet!")
+        changeModal('footballButton', "Football Teams", "Unfortunately this country doesn't compete at an international level...yet!")
     return;
     }
         Object.values(data).forEach((array) => {
           for (let league of array) {
             if (league.strGender === 'Male' && league.intDivision === "99" || league.strGender === 'Male' && league.intDivision === '1') {
-              const leagueName = league.strLeague;
-              const website = league.strWebsite;
-              const description = league.strDescriptionEN.substring(0, 600);
-              const image = league.strBadge + '/tiny';
-              changeModal('footballButton', `<img src=${image} style="max-width: 98%; max-height: 400px;"><br><br>${leagueName} <br><br>${description}...<a href=${website}>Find out more</a>`);
+                const leagueName = league.strLeague;
+                const website = league.strWebsite;
+                const description = league.strDescriptionEN.substring(0, 600);
+                const image = league.strBadge + "/preview";
+                changeModal('footballButton', `${leagueName}`, `<img src=${image} style="max-width: 98%; max-height: 400px;"><br><br>${description}...<a href=${website} target="_blank">Find out more</a>`);
             }}
         });
 }
@@ -54,14 +78,14 @@ const updateFootball = (data) => {
 const addPhoto = data => {
     const result = (data.hits[0])
     const image = result.webformatURL;
-    changeModal('cameraButton', `A little glimspe of the life & country...<br><br><img src=${image} alt="Preview Image" style="max-width: 98%; max-height: 400px;">`)
+    changeModal('cameraButton', 'Gallery Image', `<img src=${image} alt="Preview Image" style="max-width: 98%; max-height: 400px;">`)
 }
   
 //update Wiki Modal
 const updateWiki = ({query: {pages}}) => {
     const {extract, title, fullurl: url} = pages[Object.keys(pages)[0]];
     const shortenedExtract = extract.substring(0, 600);
-    changeModal('wikiButton', `${title} <br><br> ${shortenedExtract}...<br><br>Read more here: <a href=${url}>Wiki Page<a>`);
+    changeModal('wikiButton', `${title}`, `${shortenedExtract}...<br><br>Read more here: <a href=${url} target="_blank">Wiki Page<a>`);
 };  
 
 //add commas to population
@@ -72,13 +96,22 @@ function addCommas(num) {
 //add airports
 const airports = data => {
     data.forEach(({ name, latitude, longitude }) => {
-      L.marker([latitude, longitude], { icon: plane })
-        .addTo(map)
-        .on('click', function() {
-          this.bindPopup(name).openPopup();
-        });
+      const markerLatLng = L.latLng(latitude, longitude);
+      L.marker(markerLatLng, {
+        icon: L.ExtraMarkers.icon({
+          icon: 'fa-plane',
+          markerColor: 'blue',
+          prefix: 'fa',
+          iconAnchor: [12, 24] // Adjust the icon anchor point based on your custom icon
+        })
+      })
+      .addTo(map)
+      .bindPopup(name, { autoClose: false })
+      .on('click', function() {
+        this.openPopup();
+      });
     });
-}  
+  }
 
 //remove markers
 function removeAllMarkersAndPopups() {
@@ -90,13 +123,10 @@ function removeAllMarkersAndPopups() {
 }
   
 //adding map
-const map = L.map('map').fitWorld();
-map.zoomControl.remove();
-const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', 
-    {
-        //maxZoom: 10,
-        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-    }).addTo(map);
+const map = L.map('map', {minZoom:5}).fitWorld();
+const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
 
 //adding buttons
 const infoButton = L.easyButton('fa fa-info-circle', function(btn, map) {}, { id: 'infoButton' }).addTo(map);
@@ -114,12 +144,7 @@ const thumbtack = L.ExtraMarkers.icon({
     iconColor: 'blue'
 });
 
-const plane = L.ExtraMarkers.icon({
-    icon: 'fa-plane',
-    prefix: 'fa',
-    extraClasses: 'fa-1x',
-    iconColor: 'black'
-});
+
 //populating the select box*/
 $.ajax({
     url: "assets/php/getCountryName.php",
@@ -273,7 +298,7 @@ function loadUser({ coords: { latitude, longitude } }) {
                         const formattedTime = `${time}${suffix}`;
                         const infoModal = () => {
                             let flagurl=`https://flagsapi.com/${countryCode}/shiny/64.png`;
-                            changeModal('infoButton', `<img src=${flagurl}> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
+                            changeModal('infoButton', `${country}`, `<img src="${flagurl}"> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
                         }
                         infoModal()   
                     },
@@ -285,14 +310,23 @@ function loadUser({ coords: { latitude, longitude } }) {
                     type: "GET",
                     dataType: "json",
                     data: { currency },
-                    success: ({data}) => {
+                    success: ({ data }) => {
                         const conversionRate = data['conversion_rates'];
-                        const dropdownElement = 'Please select your currency below to see the conversion rate:<br><br><select id="currencyList">' +
-                        Object.entries(conversionRate)
-                        .map(([key, conversion]) => `<option value="${key}">${key} = ${conversion}</option>`)
-                        .join('') + '</select>';
-                        changeModal('currencyButton', dropdownElement);
-                    },
+                        const selectElement = document.getElementById('currencyList');
+                        const inputElement = document.getElementById('amountInput');
+                        selectElement.innerHTML = Object.keys(conversionRate).map(key => `<option value="${conversionRate[key]}">${key}</option>`).join('');
+                        const buttonElement = document.getElementById('convertButton');
+                        const resultElement = document.getElementById('conversionResult');
+                        const convertAmount = () => {
+                            const selectedCurrency = selectElement.value;
+                            const selectedKey = selectElement.options[selectElement.selectedIndex].text; 
+                            const amount = parseFloat(inputElement.value);
+                            let convertedAmount = (amount * selectedCurrency).toFixed(2);
+                            resultElement.textContent = `${amount} ${selectedKey} = ${convertedAmount} ${currency} `;
+                          };
+                        buttonElement.addEventListener('click', convertAmount);
+                        changeModal('currencyButton','Conversion Rate', ['Select your currency:<br><br>', selectElement, '<br><br>Amount:<br><br>', inputElement, '<br><br>', buttonElement, '<br><br>', resultElement]);
+                    },      
                     error: handleAjaxError
                 })
             },
@@ -440,9 +474,9 @@ selectList.addEventListener("change", function() {
                                         const formattedTime = `${time}${suffix}`;
                                         const infoModal = () => {
                                             let flagurl=`https://flagsapi.com/${countryCode}/shiny/64.png`;
-                                            changeModal('infoButton', `<img src=${flagurl}> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
+                                            changeModal('infoButton', `${country}`, `<img src="${flagurl}"> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
                                         }
-                                        infoModal() 
+                                        infoModal()
                                     },
                                     error: handleAjaxError
                                 });
@@ -452,14 +486,23 @@ selectList.addEventListener("change", function() {
                                     type: "GET",
                                     dataType: "json",
                                     data: { currency },
-                                    success: ({data}) => {
+                                    success: ({ data }) => {
                                         const conversionRate = data['conversion_rates'];
-                                        const dropdownElement = 'Please select your currency below to see the conversion rate:<br><br><select id="currencyList">' +
-                                        Object.entries(conversionRate)
-                                        .map(([key, conversion]) => `<option value="${key}">${key} = ${conversion}</option>`)
-                                        .join('') + '</select>';
-                                        changeModal('currencyButton', dropdownElement);
-                                    },
+                                        const selectElement = document.getElementById('currencyList');
+                                        const inputElement = document.getElementById('amountInput');
+                                        selectElement.innerHTML = Object.keys(conversionRate).map(key => `<option value="${conversionRate[key]}">${key}</option>`).join('');
+                                        const buttonElement = document.getElementById('convertButton');
+                                        const resultElement = document.getElementById('conversionResult');
+                                        const convertAmount = () => {
+                                            const selectedCurrency = selectElement.value;
+                                            const selectedKey = selectElement.options[selectElement.selectedIndex].text; 
+                                            const amount = parseFloat(inputElement.value);
+                                            let convertedAmount = (amount * selectedCurrency).toFixed(2);
+                                            resultElement.textContent = `${amount} ${selectedKey} = ${convertedAmount} ${currency} `;
+                                          };
+                                        buttonElement.addEventListener('click', convertAmount);
+                                        changeModal('currencyButton','Conversion Rate', ['Select your currency:<br><br>', selectElement, '<br><br>Amount:<br><br>', inputElement, '<br><br>', buttonElement, '<br><br>', resultElement]);
+                                    },               
                                     error: handleAjaxError
                                 })
                                 //major cities/areas
@@ -507,3 +550,4 @@ selectList.addEventListener("change", function() {
         error: handleAjaxError
     })
 });
+}
