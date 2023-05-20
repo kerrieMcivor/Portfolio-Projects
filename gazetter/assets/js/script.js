@@ -64,7 +64,7 @@ const updateFootball = (data) => {
           for (let league of array) {
             if (league.strGender === 'Male' && league.intDivision === "99" || league.strGender === 'Male' && league.intDivision === '1') {
                 const leagueName = league.strLeague;
-                const website = league.strWebsite;
+                const website = "https://" + league.strWebsite;
                 const description = league.strDescriptionEN.substring(0, 600);
                 const image = league.strBadge + "/preview";
                 changeModal('footballButton', `${leagueName}`, `<img src=${image} class="modal-image" id="football"><br><br><p>${description}...<a href="${website}" target="_blank">Keep Reading</a></p>`);
