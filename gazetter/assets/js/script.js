@@ -26,14 +26,12 @@ const changeModal = (buttonId, title, message) => {
   
 
 //loads all weather data for all renders
-const convertWeatherData = ({coord: {lon: weatherlocation_lon, lat: weatherlocation_lat}, main: {temp: temperature, humidity: airhumidity}, wind: {speed: windspeed, deg: winddirection}, clouds: {all: cloudcoverage}, weather: [{main: weatherconditionstring}]}) => {
+const convertWeatherData = ({main: {temp: temperature, humidity: airhumidity}, wind: {speed: windspeed}, clouds: {all: cloudcoverage}, weather: [{main: weatherconditionstring}]}) => {
     // Recalculating
-    const temperaturecelsius = Math.round((temperature - 273) * 100) / 100; // Converting Kelvin to Celsius
-    const windspeedkmh = Math.round((windspeed * 3.6) * 100) / 100; // Windspeed from m/s in km/h; Round to 2 decimals
-    const windDirections = ["North", "North-Northeast", "Northeast", "East-Northeast", "East", "East-Southeast", "Southeast", "South-Southeast", "South", "South-Southwest", "Southwest", "West-Southwest", "West", "West-Northwest", "Northwest", "North-Northwest"];
-    const directionIndex = Math.floor((winddirection + 11.25) / 22.5);
-    const winddirectionstring = windDirections[directionIndex % 16];
-    changeModal('weatherButton', 'Weather', `The current weather: ${weatherconditionstring} <br> Temperature: ${temperaturecelsius}°C <br> Humidity: ${airhumidity}% <br> Cloud coverage: ${cloudcoverage}% <br> Windspeed: ${windspeedkmh}km/h <br> Wind direction: ${winddirectionstring} <br> Weatherstation Coordinates: ${weatherlocation_lon}, ${weatherlocation_lat}`);
+    const temperaturecelsius = Math.round((temperature - 273) * 100) / 100;
+    const windspeedkmh = Math.round((windspeed * 3.6) * 100) / 100; 
+    const weatherImg = "https://pragativadi.com/wp-content/uploads/2022/07/SAVE_20220703_084840.jpg"
+    changeModal('weatherButton', 'Weather', `<img src="${weatherImg}" class="modal-image" id="weather"/><p>The current weather is ${weatherconditionstring} with a temperature of ${temperaturecelsius}°C and cloud coverage of ${cloudcoverage}%. The humidity is currently ${airhumidity}% and there is a windspeed of ${windspeedkmh}km/h</p>`);
 };
 
 //update currency
@@ -69,7 +67,7 @@ const updateFootball = (data) => {
                 const website = league.strWebsite;
                 const description = league.strDescriptionEN.substring(0, 600);
                 const image = league.strBadge + "/preview";
-                changeModal('footballButton', `${leagueName}`, `<img src=${image} style="max-width: 98%; max-height: 400px;"><br><br>${description}...<a href=${website} target="_blank">Find out more</a>`);
+                changeModal('footballButton', `${leagueName}`, `<img src=${image} class="modal-image" id="football"><br><br><p>${description}...<a href="${website}" target="_blank">Keep Reading</a></p>`);
             }}
         });
 }
@@ -78,15 +76,28 @@ const updateFootball = (data) => {
 const addPhoto = data => {
     const result = (data.hits[0])
     const image = result.webformatURL;
-    changeModal('cameraButton', 'Gallery Image', `<img src=${image} alt="Preview Image" style="max-width: 98%; max-height: 400px;">`)
+    changeModal('cameraButton', 'Gallery Image', `<img src=${image} alt="Preview Image" id="locationPhoto">`)
 }
   
 //update Wiki Modal
-const updateWiki = ({query: {pages}}) => {
-    const {extract, title, fullurl: url} = pages[Object.keys(pages)[0]];
-    const shortenedExtract = extract.substring(0, 600);
-    changeModal('wikiButton', `${title}`, `${shortenedExtract}...<br><br>Read more here: <a href=${url} target="_blank">Wiki Page<a>`);
-};  
+const updateWiki = ({ query: { pages } }) => {
+  const { extract, title, fullurl: url } = pages[Object.keys(pages)[0]];
+  const shortenedExtract = `${extract.substring(0, 600)}...`;
+  changeModal(
+    'wikiButton',
+    `${title}`,
+    `<div class="modal-content">
+      <img class="modal-image" id="wiki" src="https://pngimg.com/d/wikipedia_PNG18.png"/>
+      <div class="modal-text">
+        <p>${shortenedExtract}</p>
+        <p><a href=${url} target="_blank">Continue reading</a></p>
+      </div>
+    </div>`
+  );
+};
+
+  
+
 
 //add commas to population
 function addCommas(num) {
@@ -102,7 +113,7 @@ const airports = data => {
           icon: 'fa-plane',
           markerColor: 'blue',
           prefix: 'fa',
-          iconAnchor: [12, 24] // Adjust the icon anchor point based on your custom icon
+          iconAnchor: [12, 24] 
         })
       })
       .addTo(map)
@@ -123,7 +134,7 @@ function removeAllMarkersAndPopups() {
 }
   
 //adding map
-const map = L.map('map', {minZoom:5}).fitWorld();
+const map = L.map('map', {minZoom:3}).fitWorld();
 const tile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
@@ -297,8 +308,17 @@ function loadUser({ coords: { latitude, longitude } }) {
                         const suffix = time < 12 ? 'am' : 'pm';
                         const formattedTime = `${time}${suffix}`;
                         const infoModal = () => {
-                            let flagurl=`https://flagsapi.com/${countryCode}/shiny/64.png`;
-                            changeModal('infoButton', `${country}`, `<img src="${flagurl}"> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
+                            let flagurl = `http://www.geognos.com/api/en/countries/flag/${countryCode}.png`;
+                            let infoHTML = `
+                                <div>
+                                    <img src="${flagurl}" class="modal-image"><br>
+                                    <div>
+                                        <p>${country} is a country in ${continent} and the capital city is ${capital}.</p>
+                                        <p>The population of ${country} is ${population} people!</p>
+                                        <p>The current time in ${country} is ${formattedTime}</p>
+                                    </div>
+                                </div>`;
+                            changeModal('infoButton', `${country}`, infoHTML);
                         }
                         infoModal()   
                     },
@@ -322,10 +342,11 @@ function loadUser({ coords: { latitude, longitude } }) {
                             const selectedKey = selectElement.options[selectElement.selectedIndex].text; 
                             const amount = parseFloat(inputElement.value);
                             let convertedAmount = (amount * selectedCurrency).toFixed(2);
-                            resultElement.textContent = `${amount} ${selectedKey} = ${convertedAmount} ${currency} `;
+                            convertedAmount = addCommas(convertedAmount)
+                            resultElement.innerHTML = `<p>${amount} ${selectedKey} converts to ${convertedAmount} ${currency}</p>`;
                           };
                         buttonElement.addEventListener('click', convertAmount);
-                        changeModal('currencyButton','Conversion Rate', ['Select your currency:<br><br>', selectElement, '<br><br>Amount:<br><br>', inputElement, '<br><br>', buttonElement, '<br><br>', resultElement]);
+                        changeModal('currencyButton','Conversion Rate', ['<p>Select your currency:</p>', selectElement, '<p>   Amount:  </p>', inputElement, buttonElement, resultElement]);
                     },      
                     error: handleAjaxError
                 })
@@ -383,6 +404,61 @@ selectList.addEventListener("change", function() {
                     success: ({data}) => {
                         const { currencyCode: currency, capital, countryName: country, continentName: continent, countryCode } = data.geonames[0];
                         const formattedCountry = encodeURIComponent(country);
+                           //edge cases - data not avaialable in API
+                           if (data.geonames[0]['countryName'] === "Western Sahara") {
+                            capital = "Laayoune"
+                        }
+                        if (data.geonames[0]['countryName'] === "Palestine") {
+                            capital = "Ramallah"
+                        }
+                        if (data.geonames[0]['countryName'] === "Israel") {
+                            capital = "Jerusalem"
+                        }
+                        formatedCapital = encodeURIComponent(capital)
+                        let population = addCommas(data.geonames[0]['population']);
+                        $.ajax({
+                            url: 'assets/php/coords.php',
+                            method: "GET",
+                            dataType: "json",
+                            data: {
+                                city: formatedCapital,
+                            },
+                            success: ({data}) => {
+                                let latitude = data[0]['latitude']
+                                let longitude = data[0]['longitude']
+                                //adding markers
+                                let capitalMarker = L.marker([latitude, longitude], {icon: thumbtack}).addTo(map) 
+                                capitalMarker.bindPopup(`The capital city is ${capital}`).openPopup()
+                                //time modal
+                                $.ajax({
+                                    url: 'assets/php/worldtime.php',
+                                    method: "GET",
+                                    dataType: "json",
+                                    data: {
+                                        lat: latitude,
+                                        lon: longitude
+                                    },
+                                    success: ({data}) => {
+                                        const time = `${data['hour']}.${data['minute']}`;
+                                        const suffix = time < 12 ? 'am' : 'pm';
+                                        const formattedTime = `${time}${suffix}`;
+                                        const infoModal = () => {
+                                            let flagurl = `http://www.geognos.com/api/en/countries/flag/${countryCode}.png`;
+                                            let infoHTML = `
+                                                <div style="display: flex;">
+                                                    <img src="${flagurl}" class="modal-image">
+                                                    <div>
+                                                        <p>${country} is a country in ${continent} and the capital city is ${capital}.</p>
+                                                        <p>The population of ${country} is ${population} people!</p>
+                                                        <p>The current time in ${country} is ${formattedTime}</p>
+                                                    </div>
+                                                </div>`;
+                                            changeModal('infoButton', `${country}`, infoHTML);
+                                        }
+                                        infoModal()
+                                    },
+                                    error: handleAjaxError
+                                });
                          //airports
                         $.ajax({
                             url: "assets/php/airports.php",
@@ -434,52 +510,6 @@ selectList.addEventListener("change", function() {
                             },
                             error: handleAjaxError
                         })
-                        //edge cases - data not avaialable in API
-                        if (data.geonames[0]['countryName'] === "Western Sahara") {
-                            capital = "Laayoune"
-                        }
-                        if (data.geonames[0]['countryName'] === "Palestine") {
-                            capital = "Ramallah"
-                        }
-                        if (data.geonames[0]['countryName'] === "Israel") {
-                            capital = "Jerusalem"
-                        }
-                        formatedCapital = encodeURIComponent(capital)
-                        let population = addCommas(data.geonames[0]['population']);
-                        $.ajax({
-                            url: 'assets/php/coords.php',
-                            method: "GET",
-                            dataType: "json",
-                            data: {
-                                city: formatedCapital,
-                            },
-                            success: ({data}) => {
-                                let latitude = data[0]['latitude']
-                                let longitude = data[0]['longitude']
-                                //adding markers
-                                let capitalMarker = L.marker([latitude, longitude], {icon: thumbtack}).addTo(map) 
-                                capitalMarker.bindPopup(`The capital city is ${capital}`).openPopup()
-                                //time modal
-                                $.ajax({
-                                    url: 'assets/php/worldtime.php',
-                                    method: "GET",
-                                    dataType: "json",
-                                    data: {
-                                        lat: latitude,
-                                        lon: longitude
-                                    },
-                                    success: ({data}) => {
-                                        const time = `${data['hour']}.${data['minute']}`;
-                                        const suffix = time < 12 ? 'am' : 'pm';
-                                        const formattedTime = `${time}${suffix}`;
-                                        const infoModal = () => {
-                                            let flagurl=`https://flagsapi.com/${countryCode}/shiny/64.png`;
-                                            changeModal('infoButton', `${country}`, `<img src="${flagurl}"> <br> ${country} is a country in ${continent} and the capital city is ${capital}. <br>The population of ${country} is ${population} people! <br> The current time in ${country} is ${formattedTime}`);
-                                        }
-                                        infoModal()
-                                    },
-                                    error: handleAjaxError
-                                });
                                 //currency
                                 $.ajax({
                                     url: "assets/php/exchangeRate.php",
@@ -498,10 +528,11 @@ selectList.addEventListener("change", function() {
                                             const selectedKey = selectElement.options[selectElement.selectedIndex].text; 
                                             const amount = parseFloat(inputElement.value);
                                             let convertedAmount = (amount * selectedCurrency).toFixed(2);
-                                            resultElement.textContent = `${amount} ${selectedKey} = ${convertedAmount} ${currency} `;
+                                            convertedAmount = addCommas(convertedAmount)
+                                            resultElement.innerHTML = `<p>${amount} ${selectedKey} converts to ${convertedAmount} ${currency}</p>`;
                                           };
                                         buttonElement.addEventListener('click', convertAmount);
-                                        changeModal('currencyButton','Conversion Rate', ['Select your currency:<br><br>', selectElement, '<br><br>Amount:<br><br>', inputElement, '<br><br>', buttonElement, '<br><br>', resultElement]);
+                                        changeModal('currencyButton','Conversion Rate', ['<p>Select your currency:</p>', selectElement, '<br><br><p>Amount:</p>', inputElement, buttonElement, '<br><br>', resultElement]);
                                     },               
                                     error: handleAjaxError
                                 })
