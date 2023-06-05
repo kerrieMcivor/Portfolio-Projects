@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "bootstrap": "^5.2.3",
+    "datejs": "^1.0.0-rc3",
+    "leaflet.markercluster": "^1.5.3",
+    "luxon": "^3.3.0",
+    "numeral": "^2.0.6"
+  }
+}
