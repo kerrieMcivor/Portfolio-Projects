@@ -3,7 +3,7 @@
 	ini_set('display_errors', 'On');
 	error_reporting(E_ALL);
     $executionStartTime = microtime(true);
-    $url="https://api.openweathermap.org/data/2.5/weather?lat=".$_REQUEST['lat'].'&lon='.$_REQUEST['lon'].'&appid=3e9073c5971886742de9190acd88d5ec';
+    $url="https://api.openweathermap.org/data/2.5/forecast?lat=".$_REQUEST['lat'].'&lon='.$_REQUEST['lon'].'&appid=3e9073c5971886742de9190acd88d5ec';
 
     $ch = curl_init();
 	curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
